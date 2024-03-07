@@ -122,16 +122,18 @@ exp2 =  f <$$> exp1 <**> symbol'' '>' <**> exp2
 
 exp1 = f <$$> exp0 <**> symbol'' '+' <**> exp1
    <|> g <$$> exp0 <**> symbol'' '-' <**> exp1
+   <|> h <$$> symbol'' '~' <**> exp1
    <|>        exp0
       where f e _ e2 = Add e e2
             g e _ e2 = Sub e e2
+            h _ e = Neg e
 
 exp0 = f <$$> fator <**> symbol'' '*' <**> exp0
    <|>        fator
     where f e _ e2 = Mult e e2
 
 fator =         valor
-     <|> f <$$> symbol' '(' <**> exp0 <**> symbol' ')'
+     <|> f <$$> symbol' '(' <**> exp2 <**> symbol' ')'
      where f _ k _ = k
 
 
@@ -153,7 +155,7 @@ instance Show Inst where
     show ( Atrib e t v)     = t ++ " " ++ e ++ " = " ++ show v ++ ";\n"
 
 instance Show Exp where
-    show (Char   a )    = a 
+    show (Char   a )    = show a 
     show (Fetch  a )    = a 
     show (Empty    )    = ""
     show (Const  a )    = show a

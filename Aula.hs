@@ -28,10 +28,13 @@ optC p = fromZipper res
 
 --zopt e = Just $ opt e
 
+zi :: Exp -> Maybe Exp
+zi (Add (Const 0)  e)    = Just $ e   
+
 zopt :: Exp -> Maybe Exp
 zopt (Add (Const 0)  e)    = Just $ e    
 zopt (Add  e (Const 0))    = Just $ e    
-zopt (Add  (Const a) (Const b))    = Just $ (Const a + b)
+zopt (Add  (Const a) (Const b)) = Just $ Const (a + b)
 zopt (Mult (Const 1) e2)   = Just $ e2                           
 zopt (Mult e2 (Const 1))   = Just $ e2                
 zopt (Mult (Const 0) e2)   = Just $ Const 0
