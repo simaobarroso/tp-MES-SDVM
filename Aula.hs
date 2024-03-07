@@ -5,41 +5,61 @@ import Library.Ztrategic
 import Library.StrategicData (StrategicData)
 import Picoc
 
+
 instance StrategicData Int
 instance StrategicData PicoC
 instance StrategicData a => StrategicData [a]
 
 ex2=  Pico [(Atrib "x" "int" (Mult (Const 1) (Add (Const 0) (Const 1))))]
 
-ex = Pico $ getPico l5
+ex = getPico l5
 
-examplePicoC3 = Pico [Atrib "margem" "int" (Add (Const 15) (Const 0)),
-                       If (Bigger (Fetch "margem") (Mult (Const 30) (Const 1)))
+ex3 = Pico [Atrib "margem" "int" (Add (Const 15) (Const 0)),
+                       If (Equal (Fetch "margem") (B False))
                        [Atrib "margem" "int" (Mult (Add (Const 0)(Const 4))(Add (Add (Const 23)(Const 0)) (Mult (Const 3)(Const 1))))]
                        [Atrib "margem" "int" (Const 0)]]
 
+ex4 = Pico [If (B False) [] [], Atrib "i" "int" (Const 2)]
+
 
 optC :: PicoC -> PicoC
-optC p = fromZipper res
+optC (Pico c) = fromZipper res
     where
-        e = toZipper p
-        s = failTP `adhocTP` zopt 
+        e = toZipper novoP
+        -- ⚠  Não meter optimizações do mesmo tipo ou usar o adhocTpSeq
+        s = failTP `adhocTP` zopt `adhocTP` zi
         Just res =  applyTP (innermost s) e
+        novoP = Pico $ filter (/= Idle) c
 
 --zopt e = Just $ opt e
 
-zi :: Exp -> Maybe Exp
-zi (Add (Const 0)  e)    = Just $ e   
+
+--zi :: Inst -> Maybe Inst
+zi ( If (Neg e) b b2)             = Just $ (If e b2 b)
+
+zi ( If (Equal e (B True)) b b2)  = Just $ (If e b b2)
+zi ( If (Equal (B True) e) b b2)  = Just $ (If e b b2)
+
+zi ( If (Equal e (B False)) b b2) = Just $ (If (Neg e) b b2)
+zi ( If (Equal (B False) e) b b2) = Just $ (If (Neg e) b b2)
+
+zi ( If (B False) b b2)           = Just Idle
+
+zi _ = Nothing
+
 
 zopt :: Exp -> Maybe Exp
-zopt (Add (Const 0)  e)    = Just $ e    
-zopt (Add  e (Const 0))    = Just $ e    
+zopt (Add (Const 0)  e)         = Just $ e    
+zopt (Add  e (Const 0))         = Just $ e    
 zopt (Add  (Const a) (Const b)) = Just $ Const (a + b)
-zopt (Mult (Const 1) e2)   = Just $ e2                           
-zopt (Mult e2 (Const 1))   = Just $ e2                
-zopt (Mult (Const 0) e2)   = Just $ Const 0
-zopt (Mult e2 (Const 0))   = Just $ Const 0
-zopt (Neg (Neg (Const a))) = Just $ Const a  
+
+zopt (Mult (Const 1) e2)        = Just $ e2                           
+zopt (Mult e2 (Const 1))        = Just $ e2                
+zopt (Mult (Const 0) e2)        = Just $ Const 0
+zopt (Mult e2 (Const 0))        = Just $ Const 0
+
+zopt (Neg (Neg (Const a)))      = Just $ Const a  
+zopt (Neg (Const a))            = Just $ Const (-a)  
 zopt _ = Nothing
 
 

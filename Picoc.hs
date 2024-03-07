@@ -39,6 +39,7 @@ type Type = String
 data Inst = Atrib String Type Exp
           | While Exp Bloco
           | If    Exp Bloco Bloco 
+          | Idle
           deriving (Data, Eq)
 
 data Exp = Const   Int
@@ -84,7 +85,7 @@ mytype =  (token' "char")
       <|> (token' "int" )
       <|> (token' "bool" )
 
-primeiraletra a =  isLetter a || isLower a || a == '_'
+primeiraletra a =  isLetter a && isLower a || a == '_'
 
 atribuicoes = followedBy atrib2 (symbol' ';')
 
@@ -149,10 +150,11 @@ instance Show Inst where
             ++ concatMap show b
             ++ "}\nelse\n{" 
             ++ concatMap show b2
-            ++ "}"
+            ++ "}\n"
     show ( While e b) = "while (" ++ show e  ++ "){\n    " ++ concatMap show b ++ "}"
     show ( Atrib e t Empty)     = t ++ " " ++ e ++  ";\n"
     show ( Atrib e t v)     = t ++ " " ++ e ++ " = " ++ show v ++ ";\n"
+    show ( Idle )     = " idle " 
 
 instance Show Exp where
     show (Char   a )    = show a 
@@ -265,11 +267,12 @@ run (atrib:t) c = run t $ put atrib c
 
 run [] c = c
 
-getPico = fst . last . linhas
+getPico = Pico . fst . last . linhas
 
 --------------------------------------------------------------------------------
 -- É POSSIVEL CORRER FATORIAL
-r = run (getPico fact) []
+r = run b []
+    where (Pico b) =  getPico fact
 
 -- int n = 15; 
 -- if ( n == 0 ) then {
