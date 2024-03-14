@@ -112,6 +112,8 @@ linhas = f <$$> ordem <**> optional' ordem
     where f b [] = b
           f b bs = b ++ last bs
 
+linhas' = oneOrMore ordem
+
 
 exp2 =  f <$$> exp1 <**> symbol'' '>' <**> exp2 
     <|> g <$$> exp1 <**> symbol'' '<' <**> exp2
@@ -220,10 +222,10 @@ cont  = [("a", R 4), ("b", L "ola"), ("t", M True)]
 -- True  * True  = True && True
 
 eval :: Exp -> Context -> Out String Bool Int 
-eval (Const   i ) _ = R i
-eval (Char    s ) _ = L s
-eval (B       b ) _ = M b
-eval (Fetch   a ) c = fromJust $ lookup a c
+eval (Const   i  ) _ = R i
+eval (Char    s  ) _ = L s
+eval (B       b  ) _ = M b
+eval (Fetch   a  ) c = fromJust $ lookup a c
 eval (Neg     a  ) c = trimap  id   not  negate (eval a c)
 eval (Add     a b) c = trimap2 (++) (||) (+)    (eval a c) (eval b c)
 eval (Mult    a b) c = trimap2 id2  (&&) (*)    (eval a c) (eval b c)
@@ -241,9 +243,6 @@ opt (Mult e2 (Const 1))   = e2
 opt (Mult (Const 0) e2)   = Const 0
 opt (Mult e2 (Const 0))   = Const 0
 opt (Neg (Neg (Const a))) = Const a
-
---opt e = e
--- FIXME ACHO que faltam algumas otimizações -- ver no artigo ?
 
 --------------------------------------------------------------------------------
 
