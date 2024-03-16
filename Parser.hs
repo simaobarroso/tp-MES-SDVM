@@ -84,14 +84,12 @@ token'    a = (\k _ -> k)   <$$> token   a <**> spaces
 token''    a = (\_ k _ -> k) <$$> spaces <**> token   a <**> spaces
 
 optional' a = (\k _ -> k)   <$$> optional a <**> spaces
+optional'' a = (\_ k _ -> k)   <$$> spaces <**> optional a <**> spaces
 
 satisfy'   a = (\k _ -> k)   <$$> satisfy a <**> spaces
 satisfy''  a = (\_ k _ -> k) <$$> spaces <**> satisfy a  <**> spaces
 
 ---------- Parsers ------------
-
--- l = " int a ; char b; a = 10; while ( a ) { b = a; a = 3; if (b) then { } else { } } "
-
 
 -- FIXME
 pListasIntHaskell = 

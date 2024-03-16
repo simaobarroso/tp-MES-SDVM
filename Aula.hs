@@ -15,11 +15,12 @@ ex2=  Pico [(Atrib "x" "int" (Mult (Const 1) (Add (Const 0) (Const 1))))]
 ex = getPico l5
 
 ex3 = Pico [Atrib "margem" "int" (Add (Const 15) (Const 0)),
-                       If (Equal (Fetch "margem") (B False))
+                       IfElse (Equal (Fetch "margem") (B False))
                        [Atrib "margem" "int" (Mult (Add (Const 0)(Const 4))(Add (Add (Const 23)(Const 0)) (Mult (Const 3)(Const 1))))]
                        [Atrib "margem" "int" (Const 0)]]
 
-ex4 = Pico [If (B False) [] [], Atrib "i" "int" (Const 2)]
+ex4 = Pico [If     (B False) [] , Atrib "i" "int" (Const 2)]
+ex5 = Pico [IfElse (B False) [] [Atrib "k" "char" (Char "ola")], Atrib "i" "int" (Const 2)]
 
 
 optC :: PicoC -> PicoC
@@ -34,16 +35,19 @@ optC (Pico c) = fromZipper res
 --zopt e = Just $ opt e
 
 
---zi :: Inst -> Maybe Inst
-zi ( If (Neg e) b b2)             = Just $ (If e b2 b)
+zi ( IfElse (Neg e) b b2)             = Just $ (IfElse e b2 b)
 
-zi ( If (Equal e (B True)) b b2)  = Just $ (If e b b2)
-zi ( If (Equal (B True) e) b b2)  = Just $ (If e b b2)
+zi ( IfElse (Equal e (B True))  b b2) = Just $ IfElse e b b2 
+zi ( IfElse (Equal (B True) e)  b b2) = Just $ IfElse e b b2
 
-zi ( If (Equal e (B False)) b b2) = Just $ (If (Neg e) b b2)
-zi ( If (Equal (B False) e) b b2) = Just $ (If (Neg e) b b2)
+zi ( IfElse (Equal e (B False)) b b2) = Just $ (IfElse (Neg e) b b2)
+zi ( IfElse (Equal (B False) e) b b2) = Just $ (IfElse (Neg e) b b2)
 
-zi ( If (B False) b b2)           = Just Idle
+zi ( IfElse e b [] )                  = Just $ If e b 
+
+
+zi ( While (B False) b )              = Just Idle
+zi ( If    (B False) b )              = Just Idle
 
 zi _ = Nothing
 
@@ -51,7 +55,7 @@ zi _ = Nothing
 zopt :: Exp -> Maybe Exp
 zopt (Add (Const 0)  e)         = Just $ e    
 zopt (Add  e (Const 0))         = Just $ e    
-zopt (Add  (Const a) (Const b)) = Just $ Const (a + b)
+--zopt (Add  (Const a) (Const b)) = Just $ Const (a + b)
 
 zopt (Mult (Const 1) e2)        = Just $ e2                           
 zopt (Mult e2 (Const 1))        = Just $ e2                
@@ -61,8 +65,6 @@ zopt (Mult e2 (Const 0))        = Just $ Const 0
 zopt (Neg (Neg (Const a)))      = Just $ Const a  
 zopt (Neg (Const a))            = Just $ Const (-a)  
 zopt _ = Nothing
-
-
 
 --data Foo = Foo deriving Data
 --data Bar = Bar Int
@@ -117,19 +119,18 @@ zopt _ = Nothing
 --        et1 = toZipper exemplo
 --        step1 = idTP `adhocTP` alteraVar3
 --        Just res = applyTP (once_tdTP step1) et1
---
+
 --alteraVar3 :: String -> Maybe String
 --alteraVar3 s = Just (alteraStr s)
 --
 --alteraStr :: String -> String
 --alteraStr s = ('v':'_':s)
---
+
 --alteraCodigo2 :: PicoC
 --alteraCodigo2 = fromZipper res
 --    where
 --        et1 = toZipper exemplo
 --        step1 = idTP `adhocTP` alteraVar1 `adhocTP` alteraVar2
 --        Just res = applyTP (once_buTP step1) et1
---
---
+
 ---- once: idTP -> failtTP + Just caso que nÃ£o entra -> Nothing
