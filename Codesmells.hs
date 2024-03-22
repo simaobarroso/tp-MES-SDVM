@@ -28,6 +28,7 @@ zi ( While (B False) b )              = Just Idle
 zi ( If    (B False) b )              = Just Idle
 zi ( Comment a )                      = Just Idle
 
+zi ( IfElse (B False ) b b2 )          = Just $ IfElse (B True) b2 b
 -- fazer tipo sequencia?
 zi ( IfElse (B True ) b b2 )          = Just $ If (B True) b
 

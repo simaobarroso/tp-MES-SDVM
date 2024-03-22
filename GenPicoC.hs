@@ -1,3 +1,4 @@
+module GenPicoC where
 import Test.QuickCheck
 import Test.QuickCheck.Function
 
@@ -6,31 +7,53 @@ import Control.Monad
 import Data.List
 import Data.Char
 
+import Picoc
 
-data PicoC = Pico Bloco
+--data PicoC = Pico Bloco
+--
+--type Bloco = [Inst]
+--
+--type Type = String
 
-type Bloco = [Inst]
+palavras = listOf $ elements ['a'..'z']
 
-type Type = String
+vars = map (("var_"++).show) [0..10]
 
-data Inst = Atrib  String Type Exp
-          | While  Exp Bloco
-          | IfElse Exp Bloco Bloco
-          | If     Exp Bloco
-          | Comment String
-          | Idle
+comum e k = [ (4, liftM  Neg     e ),
+              (4, liftM  Fetch   $ elements k),
+              (4, liftM2 Add     e e),
+              (4, liftM2 Sub     e e),
+              (4, liftM2 Mult    e e),
+              (1, liftM2 Bigger  e e),
+              (1, liftM2 Smaller e e),
+              (1, liftM2 Equal   e e) ]
+ 
 
-instance Arbitrary Exp where 
-       arbitrary = frequency [
-       (1, liftM  Const   arbitrary),
-       (1, liftM  Char    arbitrary),
-       (1, liftM  B       arbitrary),
-       (1, return Empty            ),
-       (1, liftM  Neg     arbitrary),
-       (1, liftM  Fetch   arbitrary),
-       (1, liftM  Add     arbitrary arbitrary),
-       (1, liftM  Sub     arbitrary arbitrary),
-       (1, liftM  Mult    arbitrary arbitrary),
-       (1, liftM  Bigger  arbitrary arbitrary),
-       (1, liftM  Smaller arbitrary arbitrary),
-       (1, liftM  Equal   arbitrary arbitrary) ]
+gei k 0 = liftM Const arbitrary
+gei k n = frequency $ (12, liftM Const arbitrary) : comum e k
+    where  e = gei k $ div n 2
+
+geb k 0 = liftM B arbitrary
+geb k n = frequency $ (12, liftM  B    arbitrary) : comum e k 
+   where e = geb k $ div n 2
+
+ges k 0 = liftM Char arbitrary
+ges k n = frequency $ (12, liftM Char  palavras ) : comum e k
+    where e = ges k $ div n 2
+
+
+testegei = sample $ sized $ gei vars
+testegeb = sample $ sized $ geb vars
+testeges = sample $ sized $ ges vars
+
+genExp :: [String ] -> Gen Exp
+genExp v = oneof $ sized <$> ($v) <$> [gei, geb, ges] 
+
+--data Inst = Atrib  String Type Exp
+--          | While  Exp Bloco
+--          | IfElse Exp Bloco Bloco
+--          | If     Exp Bloco
+
+genType = elements ["int", "char", "bool"]
+
+genInst = frequency [ (1, liftM4 Atrib genType genExp) ]
