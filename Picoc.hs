@@ -13,8 +13,6 @@ import Control.Monad
 
 -- import Data.Generics.Aliases
 
--- Para garantir terminação não podemos usar recursividade a esquerda
-
 ------ AUX -----------------------------------------------------------------
 
 pInt2 :: Parser Int
@@ -40,6 +38,7 @@ data Inst = Atrib  String Type Exp
           | While  Exp Bloco
           | IfElse Exp Bloco Bloco 
           | If     Exp Bloco 
+          | Comment String
           | Idle
           deriving (Data, Eq)
 
@@ -57,10 +56,8 @@ data Exp = Const   Int
          | Equal   Exp Exp
            deriving (Data, Eq)
 
-
-var = f <$$> satisfy primeiraletra <**> zeroOrMore (satisfy (isAlphaNum))
+var = f <$$> satisfy primeiraletra <**> zeroOrMore (satisfy isAlphaNum) 
     where f a b = a:b
-
 
 bool2 :: Parser Bool
 bool2 =  f <$$> (token' "True" )
@@ -83,7 +80,6 @@ davalor   =  f <$$> var <**> optional' ( j <$$> symbol'' '=' <**> exp2 )
 
 atrib2 =  f <$$> mytype <**> davalor <**> symbol' ';'
       <|> g <$$>             davalor <**> symbol' ';'
-
     where f t (Atrib n _ e) _ = Atrib n t e
           g a _  = a
 
@@ -104,7 +100,7 @@ primeiraletra a =  isLetter a && isLower a || a == '_'
 myif = f <$$> token'  "if" 
          <**> enclosedBy (symbol' '(') exp2  (symbol'' ')') 
          <**> token' "then" <**> (symbol' '{') 
-         <**> linhas'       <**> (symbol'' '}')
+         <**> linhas'       <**> (symbol' '}')
     where f _ e _ _ c _  = If e c
 
 finalIf = f <$$> myif <**> optional' ( g <$$> token' "else" <**> (symbol' '{') <**> 
@@ -117,9 +113,10 @@ finalIf = f <$$> myif <**> optional' ( g <$$> token' "else" <**> (symbol' '{') <
 
 ifElse2 = finalIf
 --------------------------------------------------------------------------------
-ifElse = f <$$> token'  "if" 
+-- versão antiga do if else, tem 
+ifElse = f <$$> token''  "if" 
            <**> enclosedBy (symbol' '(') exp2  (symbol'' ')') 
-           <**> token' "then" 
+           <**> token'' "then" 
            <**> (symbol' '{') <**> linhas' <**> (symbol'' '}')
            <**> optional ( g <$$> 
                      token' "else" 
@@ -128,16 +125,22 @@ ifElse = f <$$> token'  "if"
           f _ p _ _ c _ k  = IfElse p c (concat k)
           g _ _ l _ = l
 
-while = f <$$> token' "while" 
+while = f <$$> token'' "while" 
           <**> enclosedBy (symbol' '(') exp2  (symbol'' ')') 
           <**> (symbol' '{') <**> linhas' <**> (symbol'' '}')
 
     where f _ e _ l _ = While e l
 
+-- isPrint -- Unicode characters (letters, numbers, marks, punctuation, symbols and spaces).
+comment =  f <$$> token "//" <**> zeroOrMore (satisfy isPrint) <**> token' "//"
+    where f _ t _ = Comment t
+
+
 -- ordem imperativa
 ordem  =  atrib2 
       <|> while
       <|> ifElse2
+      <|> comment
 
 linhas' = oneOrMore ordem
 
@@ -174,14 +177,15 @@ instance Show PicoC where
     show (Pico l) = concatMap show l 
 
 instance Show Inst where
-    show ( IfElse e b b2) = "if ("++ show e ++ ")\nthen{\n" 
+    show ( IfElse e b b2)   = "if ("++ show e ++ ")\nthen{\n" 
             ++ concatMap show b  ++ "}\nelse{\n" 
             ++ concatMap show b2 ++ "}\n"
-    show ( If e b ) = "if ("++ show e ++ ")\nthen{\n" ++ concatMap show b ++ "}\n" 
-    show ( While e b) = "while (" ++ show e  ++ "){\n    " ++ concatMap show b ++ "}"
-    show ( Atrib e t Empty)     = t ++ " " ++ e ++  ";\n"
+    show ( If e b )         = "if ("++ show e ++ ")\nthen{\n" ++ concatMap show b ++ "}\n" 
+    show ( While e b)       = "while (" ++ show e  ++ "){\n    " ++ concatMap show b ++ "}"
+    show ( Atrib e t Empty) = t ++ " " ++ e ++  ";\n"
     show ( Atrib e t v)     = t ++ " " ++ e ++ " = " ++ show v ++ ";\n"
-    show ( Idle )     = "" 
+    show ( Idle )           = "" 
+    show ( Comment a )      = "//"  ++ a ++ "//\n" 
 
 instance Show Exp where
     show (Char   a )    = show a 
@@ -202,7 +206,8 @@ instance Show Exp where
 -- unparser . parser = id
 clean =  filter (not . isSpace) 
 
-puId s = (clean s)  ==  (clean $ concatMap show (fst $ last $ linhas' s) )
+puId s = (clean s)  ==  (clean $ concatMap show i )
+    where (Pico i) = getPico s
 
 --------------------------------------------------------------------------------
 
@@ -270,16 +275,17 @@ put :: Inst -> Context -> Context
 put (Atrib n t e) c = (n,eval e c) : filter ( (/=n) . fst ) c
 
 run :: [Inst] -> Context -> Context
-run ((If e b):t)  c = if fromOut $ eval e c
-                         then run (b  ++ t) c
-                         else run t c
-run ((IfElse e b b2):t)  c = if fromOut $ eval e c
-                         then run (b  ++ t) c
-                         else run (b2 ++ t) c
+run ((If e b):t)  c =        if fromOut $ eval e c
+                             then run (b  ++ t) c
+                             else run t c
 
-run (w@(While e b):t ) c = if fromOut $ eval e c
-                           then run (b ++ [w] ++  t) c
-                           else run t c
+run ((IfElse e b b2):t)  c = if fromOut $ eval e c
+                             then run (b  ++ t) c
+                             else run (b2 ++ t) c
+
+run (w@(While e b):t ) c =   if fromOut $ eval e c
+                             then run (b ++ [w] ++  t) c
+                             else run t c
 
 run (atrib:t) c = run t $ put atrib c
 
@@ -308,7 +314,7 @@ r = run b []
 
 fact = "int n = 15; if ( n == 0 ) then { int fact = 1; } else { int i = 1; int fact = 1; while ( i < n + 1 ) { fact = fact * i; i = i + 1; } }"
 
-fact2 = "int n = 15; if ( n == 0 ) then { int fact = 1;}int i = 1; int fact = 1; while ( i < n + 1 ) { fact = fact * i; i = i + 1; } "
+fact2 = "int n = 15; if ( n == 0 ) then { int fact = 1;} //isto é a função fatorial !!!// int i = 1; int fact = 1; while ( i < n + 1 ) { fact = fact * i; i = i + 1; } "
 
 
 l4 = "int margem = 15 ; if ( margem > 30 ) then { margem = 4 * 2 + 3 ; } else { margem = margem + 4 ; }"
