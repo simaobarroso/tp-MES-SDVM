@@ -24,11 +24,12 @@ pSinal2 = symbol  '-'
       <|> f <$$> yield '+'
    where f = const '0'
 
+myisAlphaNum  = flip elem $ '_':['a'..'z']++['A'..'Z']++['0'..'9']
 ----------------------------------------------------------------------------
 
 
 data PicoC = Pico Bloco
-    deriving (Data)
+    deriving (Data, Eq)
 
 type Bloco = [Inst]
 
@@ -54,7 +55,7 @@ data Exp = Const   Int
          | Bigger  Exp Exp
          | Smaller Exp Exp
          | Equal   Exp Exp
-           deriving (Data, Eq)
+         deriving (Data, Eq)
 
 var = f <$$> satisfy primeiraletra <**> zeroOrMore (satisfy isAlphaNum) 
     where f a b = a:b
@@ -93,7 +94,8 @@ mytype =  (token' "char")
       <|> (token' "int" )
       <|> (token' "bool" )
 
-primeiraletra a =  isLetter a && isLower a || a == '_'
+
+primeiraletra a =  myisAlphaNum a && isLetter a && isLower a || a == '_'
 
 --------------------------------------------------------------------------------
 -- Alternativa para os if then elses
@@ -154,15 +156,15 @@ exp2 =  f <$$> exp1 <**> symbol'' '>' <**> exp2
 
 exp1 = f <$$> exp0 <**> symbol'' '+' <**> exp1
    <|> g <$$> exp0 <**> symbol'' '-' <**> exp1
-   <|> h <$$> symbol'' '~' <**> exp1
    <|>        exp0
       where f e _ e2 = Add e e2
             g e _ e2 = Sub e e2
-            h _ e = Neg e
 
 exp0 = f <$$> fator <**> symbol'' '*' <**> exp0
+   <|> h <$$> symbol'' '~' <**> exp0
    <|>        fator
     where f e _ e2 = Mult e e2
+          h _ e = Neg e
 
 fator =         valor
      <|> f <$$> symbol' '(' <**> exp2 <**> symbol' ')'
@@ -177,10 +179,10 @@ instance Show PicoC where
     show (Pico l) = concatMap show l 
 
 instance Show Inst where
-    show ( IfElse e b b2)   = "if ("++ show e ++ ")\nthen{\n" 
+    show ( IfElse e b b2)   = "if("++ show e ++ ")\nthen{\n" 
             ++ concatMap show b  ++ "}\nelse{\n" 
             ++ concatMap show b2 ++ "}\n"
-    show ( If e b )         = "if ("++ show e ++ ")\nthen{\n" ++ concatMap show b ++ "}\n" 
+    show ( If e b )         = "if("++ show e ++ ")\nthen{\n" ++ concatMap show b ++ "}\n" 
     show ( While e b)       = "while (" ++ show e  ++ "){\n    " ++ concatMap show b ++ "}"
     show ( Atrib e t Empty) = t ++ " " ++ e ++  ";\n"
     show ( Atrib e t v)     = t ++ " " ++ e ++ " = " ++ show v ++ ";\n"
@@ -193,12 +195,12 @@ instance Show Exp where
     show (Empty    )    = ""
     show (Const  a )    = show a
     show (B      a )    = show a 
-    show (Sub     e e2) = show e ++ " - "  ++ show e2 
-    show (Mult    e e2) = show e ++ " * "  ++ show e2
-    show (Add     e e2) = show e ++ " + "  ++ show e2
-    show (Smaller e e2) = show e ++ " < "  ++ show e2 
-    show (Bigger  e e2) = show e ++ " > "  ++ show e2 
-    show (Equal   e e2) = show e ++ " == " ++ show e2 
+    show (Sub     e e2) = show e ++ "-"  ++ show e2 
+    show (Mult    e e2) = "(" ++ show e ++ ")" ++ "*" ++"(" ++ show e2 ++ ")"
+    show (Add     e e2) = show e ++ "+"  ++ show e2
+    show (Smaller e e2) = show e ++ "<"  ++ show e2 
+    show (Bigger  e e2) = show e ++ ">"  ++ show e2 
+    show (Equal   e e2) = show e ++ "==" ++ show e2 
     show (Neg     e   ) = "~( " ++ show e ++ " )"
 
 --------------------------------------------------------------------------------
@@ -208,6 +210,9 @@ clean =  filter (not . isSpace)
 
 puId s = (clean s)  ==  (clean $ concatMap show i )
     where (Pico i) = getPico s
+
+
+puId2 p@(Pico i) = p == ( getPico (concatMap show i) )
 
 --------------------------------------------------------------------------------
 
@@ -329,4 +334,8 @@ ast2 = Mult  ( Add ( Const 0 ) (Const 4) ) (Const 10)
 ast3 = Add (Add (Neg (Const 4)) (Const 4)) (Const 5)
 
 
-
+eC3 :: PicoC
+eC3 = Pico [Atrib "margem" "int" (Add (Const 15) (Const 0)),
+                       IfElse (Bigger (Fetch "margem") (Mult (Const 30) (Const 1)))
+                       [Atrib "margem" "int" (Mult (Add (Const 0)(Const 4))(Add (Add (Const 23)(Const 0)) (Mult (Const 3)(Const 1))))]
+                       [Atrib "margem" "int" (Const 0)]]
