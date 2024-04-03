@@ -55,7 +55,12 @@ data Exp = Const   Int
          | Bigger  Exp Exp
          | Smaller Exp Exp
          | Equal   Exp Exp
-         deriving (Data, Eq)
+         deriving (Data)
+
+instance Eq Exp where
+    e1 == e2 = show e1 == show e2 
+
+-- FIXME 
 
 var = f <$$> satisfy primeiraletra <**> zeroOrMore (satisfy isAlphaNum) 
     where f a b = a:b
@@ -105,8 +110,8 @@ myif = f <$$> token'  "if"
          <**> linhas'       <**> (symbol' '}')
     where f _ e _ _ c _  = If e c
 
-finalIf = f <$$> myif <**> optional' ( g <$$> token' "else" <**> (symbol' '{') <**> 
-                (h <$$> optional'(linhas') )<**> (symbol'' '}'))
+finalIf = f <$$> myif <**> optional' ( g <$$> token' "else"       <**> (symbol' '{') <**> 
+                                      (h <$$> optional'(linhas') )<**> (symbol'' '}'))
     where g _ _ c _ = c
           f i [] = i
           f (If e c) c2 = IfElse e c (concat c2)
@@ -205,17 +210,6 @@ instance Show Exp where
 
 --------------------------------------------------------------------------------
 
--- unparser . parser = id
-clean =  filter (not . isSpace) 
-
-puId s = (clean s)  ==  (clean $ concatMap show i )
-    where (Pico i) = getPico s
-
-
-puId2 p@(Pico i) = p == ( getPico (concatMap show i) )
-
---------------------------------------------------------------------------------
-
 data Out l m r = L l | M m | R r
     deriving (Data, Show, Eq)
 -- Out não é funtor
@@ -293,29 +287,23 @@ run (w@(While e b):t ) c =   if fromOut $ eval e c
                              else run t c
 
 run (atrib:t) c = run t $ put atrib c
-
 run [] c = c
 
-getPico = Pico . fst . last . linhas'
+
+getPico = Pico . fst . head . filter (null . snd)  . linhas'
+
+parser = getPico
+
+unparse (Pico i) = concatMap show i
+
+prop1 p = p == (parser ( unparse p) )
 
 runP (Pico p) = run p []
 --------------------------------------------------------------------------------
 
+
 r = run b []
     where (Pico b) =  getPico fact
-
--- int n = 15; 
--- if ( n == 0 ) then {
---     int fact = 1;
--- }
--- else {
---     int i = 1; 
---     int fact = 1;
---     while ( i < n ) {
---         fact = i * fact ;
---         i = i + 1;
---     }
--- }
 
 fact = "int n = 15; if ( n == 0 ) then { int fact = 1; } else { int i = 1; int fact = 1; while ( i < n + 1 ) { fact = fact * i; i = i + 1; } }"
 
@@ -326,7 +314,7 @@ l4 = "int margem = 15 ; if ( margem > 30 ) then { margem = 4 * 2 + 3 ; } else { 
 
 l5 = "int margem = 15 ; int b = 0 + 0 + 0 + 0;if ( margem > 30 ) then { margem = 4 * 2 + 3 ; } else { margem = margem + 4 ; }"
 
-l  = "int a ; char b; a = 10; while ( a ) { b = a; a = 3;if (b) then { } else { } } "
+l  = "int a ; char b; a = 10; while ( a ) { b = a; a = 3; if (b) then { } else { } } "
 l2 = "int a ; char b; a = 10*10; while ( a ) { b = a; a = 3;if (b) then { } else { } } "
 l3 = "int a ; char b; a = 10*10; while ( a<100 ) { b = a; a = 3;if (b) then { } else { } } "
 ast  = Mult  ( Add ( Const 4 ) (Const 4) ) (Const 10)
@@ -339,3 +327,8 @@ eC3 = Pico [Atrib "margem" "int" (Add (Const 15) (Const 0)),
                        IfElse (Bigger (Fetch "margem") (Mult (Const 30) (Const 1)))
                        [Atrib "margem" "int" (Mult (Add (Const 0)(Const 4))(Add (Add (Const 23)(Const 0)) (Mult (Const 3)(Const 1))))]
                        [Atrib "margem" "int" (Const 0)]]
+
+
+p2 = "int margem=15+0;\nif(margem>(30)*(1))\nthen{\nint margem=(0+4)*(23+0+(3)*(1));\n}\nelse{\nint margem=0;\n}\n"
+
+p = unparse eC3
