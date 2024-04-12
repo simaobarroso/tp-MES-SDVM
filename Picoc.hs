@@ -41,6 +41,7 @@ data Inst = Atrib  String Type Exp
           | If     Exp Bloco 
           | Comment String
           | Idle
+          | Return Exp
           deriving (Data, Eq)
 
 data Exp = Const   Int
@@ -143,6 +144,7 @@ comment =  f <$$> token "//" <**> zeroOrMore (satisfy isPrint) <**> token' "//"
     where f _ t _ = Comment t
 
 
+
 -- ordem imperativa
 ordem  =  atrib2 
       <|> while
@@ -193,6 +195,7 @@ instance Show Inst where
     show ( Atrib e t v)     = t ++ " " ++ e ++ " = " ++ show v ++ ";\n"
     show ( Idle )           = "" 
     show ( Comment a )      = "//"  ++ a ++ "//\n" 
+    show ( Return  a )      = "return"  ++ show a ++ "\n" 
 
 instance Show Exp where
     show (Char   a )    = show a 
@@ -239,6 +242,7 @@ comp2 f f2 f3 (R x) (R x2) = M (f3 x x2)
 id2 = const
 
 type    Context = [(String, Out String Bool Int )] 
+
 cont :: Context
 cont  = [("a", R 4), ("b", L "ola"), ("t", M True)]
 
@@ -270,8 +274,8 @@ eval (Equal   a b) c = comp2   (==) (==) (==)   (eval a c) (eval b c)
 fromOut (M b) = b
 fromOut _ = False
 
-put :: Inst -> Context -> Context
-put (Atrib n t e) c = (n,eval e c) : filter ( (/=n) . fst ) c
+put2 :: Inst -> Context -> Context
+put2 (Atrib n t e) c = (n,eval e c) : filter ( (/=n) . fst ) c
 
 run :: [Inst] -> Context -> Context
 run ((If e b):t)  c =        if fromOut $ eval e c
@@ -286,9 +290,12 @@ run (w@(While e b):t ) c =   if fromOut $ eval e c
                              then run (b ++ [w] ++  t) c
                              else run t c
 
-run (atrib:t) c = run t $ put atrib c
+run (atrib:t) c = run t $ put2 atrib c
 run [] c = c
 
+runP (Pico p) = run p []
+
+-------------------------------------------------------------------------------
 
 getPico = Pico . fst . head . filter (null . snd)  . linhas'
 
@@ -298,14 +305,31 @@ unparse (Pico i) = concatMap show i
 
 prop1 p = p == (parser ( unparse p) )
 
-runP (Pico p) = run p []
+getReturn = snd . head . filter ((=="return"). fst)
+
 --------------------------------------------------------------------------------
 
+runTest :: PicoC -> (Context, Out String Bool Int) -> Bool
+runTest (Pico p) (i,r) = r == (getReturn $ run p i )
+--runTest (getPico fact) ([],(R 1307674368000))
+
+runTestSuite :: PicoC -> [(Context, Out String Bool Int)] -> Bool
+runTestSuite p l = all (runTest p) l
+
+
+a = runTestSuite (parser programa1) [ ([("a",R 3),("b",R 9),("c",R 1)], R 9)  ,([("a",R 3),("b",R 0),("c",R 1)], R 3) ]
+
+a2 = runTest (parser programa1 ) ([("a",R 3),("b",R 9),("c",R 1)], R 9) 
+
+
+--------------------------------------------------------------------------------
+-- EXEMPLOS DEBUGGING
+--------------------------------------------------------------------------------
 
 r = run b []
     where (Pico b) =  getPico fact
 
-fact = "int n = 15; if ( n == 0 ) then { int fact = 1; } else { int i = 1; int fact = 1; while ( i < n + 1 ) { fact = fact * i; i = i + 1; } }"
+fact = "int n = 15; if ( n == 0 ) then { int fact = 1; } else { int i = 1; int fact = 1; while ( i < n + 1 ) { fact = fact * i; i = i + 1; } } return = fact;"
 
 fact2 = "int n = 15; if ( n == 0 ) then { int fact = 1;} //isto é a função fatorial !!!// int i = 1; int fact = 1; while ( i < n + 1 ) { fact = fact * i; i = i + 1; } "
 
@@ -332,3 +356,6 @@ eC3 = Pico [Atrib "margem" "int" (Add (Const 15) (Const 0)),
 p2 = "int margem=15+0;\nif(margem>(30)*(1))\nthen{\nint margem=(0+4)*(23+0+(3)*(1));\n}\nelse{\nint margem=0;\n}\n"
 
 p = unparse eC3
+
+programa0 = fact
+programa1 = "if (a > b) then { if ( b > c ) then { m = b; } else { m = c; } } else { if ( a > c )  then { m = a; } else { m = c; } } return = m; "
