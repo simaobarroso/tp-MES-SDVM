@@ -123,3 +123,14 @@ pString = f <$$> symbol '\"'
             <**> zeroOrMore (satisfy (/='\"')) 
             <**> symbol '\"'
     where f a b c = b 
+
+
+pInt2 :: Parser Int   
+pInt2 = f <$$> pSinal2 <**> pDigitos
+    where f x y = read $ x:y
+ 
+pSinal2 = symbol  '-' 
+      <|> f <$$> symbol  '+'
+      <|> f <$$> yield '+'
+   where f = const '0'
+

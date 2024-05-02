@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, StandaloneDeriving, FlexibleInstances #-}
 module Picoc where
 
 import Parser
@@ -8,25 +8,25 @@ import Data.Char
 import Data.Maybe
 import Data.List
 
+import Control.Concurrent
 import Control.Monad
+
+import System.Random (randomRIO)
+
+import Library.Probability
+
+infixl 3 ...
 
 
 -- import Data.Generics.Aliases
 
 ------ AUX -----------------------------------------------------------------
 
-pInt2 :: Parser Int
-pInt2 = f <$$> pSinal2 <**> pDigitos
-    where f x y = read $ x:y
-
-pSinal2 = symbol  '-'
-      <|> f <$$> symbol  '+'
-      <|> f <$$> yield '+'
-   where f = const '0'
-
 myisAlphaNum  = flip elem $ '_':['a'..'z']++['A'..'Z']++['0'..'9']
+
 ----------------------------------------------------------------------------
 
+deriving instance Data (Dist Int)
 
 data PicoC = Pico Bloco
     deriving (Data, Eq)
@@ -40,11 +40,13 @@ data Inst = Atrib  String Type Exp
           | IfElse Exp Bloco Bloco 
           | If     Exp Bloco 
           | Comment String
+          | Wait   Int 
           | Idle
           | Return Exp
           deriving (Data, Eq)
 
-data Exp = Const   Int
+data Exp = D2 (Dist Int)
+         | Const   Int
          | Char    String
          | B       Bool
          | Empty
@@ -103,7 +105,7 @@ mytype =  (token' "char")
 
 primeiraletra a =  myisAlphaNum a && isLetter a && isLower a || a == '_'
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Alternativa para os if then elses
 myif = f <$$> token'  "if" 
          <**> enclosedBy (symbol' '(') exp2  (symbol'' ')') 
@@ -120,7 +122,7 @@ finalIf = f <$$> myif <**> optional' ( g <$$> token' "else"       <**> (symbol' 
           h l = concat l
 
 ifElse2 = finalIf
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- versão antiga do if else, tem 
 ifElse = f <$$> token''  "if" 
            <**> enclosedBy (symbol' '(') exp2  (symbol'' ')') 
@@ -133,7 +135,7 @@ ifElse = f <$$> token''  "if"
           f _ p _ _ c _ k  = IfElse p c (concat k)
           g _ _ l _ = l
 
-while = f <$$> token'' "while" 
+while2 = f <$$> token'' "while" 
           <**> enclosedBy (symbol' '(') exp2  (symbol'' ')') 
           <**> (symbol' '{') <**> linhas' <**> (symbol'' '}')
 
@@ -147,7 +149,7 @@ comment =  f <$$> token "//" <**> zeroOrMore (satisfy isPrint) <**> token' "//"
 
 -- ordem imperativa
 ordem  =  atrib2 
-      <|> while
+      <|> while2
       <|> ifElse2
       <|> comment
 
@@ -178,9 +180,9 @@ fator =         valor
      where f _ k _ = k
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Unparser 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 instance Show PicoC where
     show (Pico l) = concatMap show l 
@@ -211,11 +213,11 @@ instance Show Exp where
     show (Equal   e e2) = show e ++ "==" ++ show e2 
     show (Neg     e   ) = "~( " ++ show e ++ " )"
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 data Out l m r = L l | M m | R r
     deriving (Data, Show, Eq)
--- Out não é funtor
+-- Out não é funtor, trifuntor
 -- Funtor :: * -> *
 -- usando o ```import Data.Generics.Aliases``` pode ser possível criar uma instancia funtor Out 
 -- poderia criar um fmap 
@@ -246,7 +248,7 @@ type    Context = [(String, Out String Bool Int )]
 cont :: Context
 cont  = [("a", R 4), ("b", L "ola"), ("t", M True)]
 
--- EVAL BEHAVIOR - tem polimorfismo caseiro
+-- EVAL BEHAVIOR - polimorfismo caseiro
 -- Neg 4 = -4
 -- Neg False = True
 -- "asd" + "ola" = "asd" ++ "ola"
@@ -255,43 +257,68 @@ cont  = [("a", R 4), ("b", L "ola"), ("t", M True)]
 --  3    * 8     = 3 * 8
 -- True  * True  = True && True
 
-eval :: Exp -> Context -> Out String Bool Int 
-eval (Const   i  ) _ = R i
-eval (Char    s  ) _ = L s
-eval (B       b  ) _ = M b
-eval (Fetch   a  ) c = fromJust $ lookup a c
-eval (Neg     a  ) c = trimap  id   not  negate (eval a c)
-eval (Add     a b) c = trimap2 (++) (||) (+)    (eval a c) (eval b c)
-eval (Mult    a b) c = trimap2 id2  (&&) (*)    (eval a c) (eval b c)
-eval (Smaller a b) c = comp2   (<)  (<)  (<)    (eval a c) (eval b c)
-eval (Bigger  a b) c = comp2   (>)  (>)  (>)    (eval a c) (eval b c)
-eval (Equal   a b) c = comp2   (==) (==) (==)   (eval a c) (eval b c)
+eval :: Exp -> Context -> IO (Out String Bool Int)
+eval (Const   i  ) _ = return $ R i
+eval (Char    s  ) _ = return $ L s
+eval (B       b  ) _ = return $ M b
+eval (Fetch   a  ) c = return $ fromJust $ lookup a c
+eval (D2      d  ) _ = do {v <- (getFromDist d); return (R v)}
 
---------------------------------------------------------------------------------
+eval (Neg     a  ) c = trimap  id   not  negate <$> eval a c
+eval (Add     a b) c = trimap2 (++) (||) (+)    <$> eval a c <*> eval b c
+eval (Mult    a b) c = trimap2 id2  (&&) (*)    <$> eval a c <*> eval b c
+eval (Smaller a b) c = comp2   (<)  (<)  (<)    <$> eval a c <*> eval b c
+eval (Bigger  a b) c = comp2   (>)  (>)  (>)    <$> eval a c <*> eval b c
+eval (Equal   a b) c = comp2   (==) (==) (==)   <$> eval a c <*> eval b c
+
+-------------------------------------------------------------------------------
+
+wait = threadDelay . (* 1000000)
+
+-- random float
+rf = randomRIO (0,1) :: IO Float
+
+getFromDist d = selectP d <$> rf
+-- getFromDist (uniform [1..10]) 
+
+-------------------------------------------------------------------------------
 -- Running the code
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 fromOut (M b) = b
 fromOut _ = False
 
-put2 :: Inst -> Context -> Context
-put2 (Atrib n t e) c = (n,eval e c) : filter ( (/=n) . fst ) c
+-- colocar na memória
+put2 :: Inst ->  Context -> IO Context
+put2 (Atrib n t e) c = do
+    valor <- eval e c 
+    return ((n, valor) : filter ( (/=n) . fst ) c) 
 
-run :: [Inst] -> Context -> Context
-run ((If e b):t)  c =        if fromOut $ eval e c
-                             then run (b  ++ t) c
-                             else run t c
+run :: [Inst] -> Context -> IO Context
+run ((If e b):t)  c = do
+    valor <- eval e c
+    if fromOut valor
+    then run (b  ++ t) c
+    else run t c
+run ((IfElse e b b2):t)  c = do
+    valor <- eval e c
+    if fromOut valor 
+    then run (b  ++ t) c 
+    else run (b2 ++ t) c
 
-run ((IfElse e b b2):t)  c = if fromOut $ eval e c
-                             then run (b  ++ t) c
-                             else run (b2 ++ t) c
+run (w@(While e b):t ) c = do
+    valor <- eval e c
+    if fromOut valor 
+    then run (b ++ [w] ++  t) c 
+    else run t c
 
-run (w@(While e b):t ) c =   if fromOut $ eval e c
-                             then run (b ++ [w] ++  t) c
-                             else run t c
+run ((Wait k):t) c = wait k >> run t c
 
-run (atrib:t) c = run t $ put2 atrib c
-run [] c = c
+run (atrib:t) c    = do
+    nc <- put2 atrib c 
+    run t nc 
+
+run [] c = return c
 
 runP (Pico p) = run p []
 
@@ -303,28 +330,55 @@ parser = getPico
 
 unparse (Pico i) = concatMap show i
 
-prop1 p = p == (parser ( unparse p) )
-
 getReturn = snd . head . filter ((=="return"). fst)
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- Equivalence property
+-------------------------------------------------------------------------------
 
-runTest :: PicoC -> (Context, Out String Bool Int) -> Bool
-runTest (Pico p) (i,r) = r == (getReturn $ run p i )
---runTest (getPico fact) ([],(R 1307674368000))
+--prop1 p = p == (parser ( unparse p) )
+prop1 (Pico p) (Pico q) = p ~ q
 
-runTestSuite :: PicoC -> [(Context, Out String Bool Int)] -> Bool
-runTestSuite p l = all (runTest p) l
+(~) :: [Inst] -> [Inst] -> IO Bool
+p ~ q = liftM2 (==) (run p []) (run q [])
+
+
+-------------------------------------------------------------------------------
+
+runTest :: PicoC -> (Context, Out String Bool Int) -> IO Bool
+runTest (Pico p) (i,r) = liftM2 (==) (return r) (getReturn <$> run p i )
+
+--res = runTest (getPico fact) ([],(R 1307674368000))
+
+-- blackbird combinator (.: no Data.Composition) 
+(...) = (.).(.)
+
+runTestSuite :: PicoC -> [(Context, Out String Bool Int)] -> IO Bool
+runTestSuite = liftM (all id) . sequence ... map . runTest 
 
 
 a = runTestSuite (parser programa1) [ ([("a",R 3),("b",R 9),("c",R 1)], R 9)  ,([("a",R 3),("b",R 0),("c",R 1)], R 3) ]
 
 a2 = runTest (parser programa1 ) ([("a",R 3),("b",R 9),("c",R 1)], R 9) 
 
+a3 = runTestSuite (parser "if ( a > b ) then { return = a;} else { return = b;}") a3input
+a3input = [
+    ([("a",R 4),          ("b", R 3)     ] ,R 4),
+    ([("a",R (-100)),     ("b", R (-200))] ,R (-100)),
+    ([("a",L "bacalhau"), ("b", L "atum")] ,L "bacalhau") ]
 
---------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
 -- EXEMPLOS DEBUGGING
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+dados :: PicoC
+dados = Pico [
+    Atrib "x" "int" $ D2 (uniform [1..10]),
+    Atrib "y" "int" $ D2 (uniform [1..10]),
+    Atrib "z" "int" $ Mult (Fetch "x") (Fetch "y")
+    ]
+
 
 r = run b []
     where (Pico b) =  getPico fact
