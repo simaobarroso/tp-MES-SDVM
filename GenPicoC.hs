@@ -11,6 +11,7 @@ import Data.List
 import Data.Char
 
 import Picoc
+import Types
 
 type Gerador st a = StateT st Gen a
 
@@ -23,6 +24,21 @@ f >< g = split (f . fst) (g . snd)
 -------------------------------------------------------------------------------
 -- Generators
 -------------------------------------------------------------------------------
+
+instance Arbitrary PicoC where
+    shrink = shrinkPico
+    arbitrary = sized genPico
+
+instance Arbitrary Exp where
+    shrink = shrinkExp 
+    arbitrary = undefined -- FIXME não dá jeito defenir porque está num stateT
+
+instance Arbitrary Inst where
+    shrink = shrinkInst 
+    arbitrary = undefined -- FIXME não dá jeito defenir porque está num stateT
+
+-------------------------------------------------------------------------------
+
 sta     = suchThat arbitrary 
 
 alpha   = listOf $ sta myisAlphaNum
@@ -115,7 +131,6 @@ genInst  n = do
                        (1, return ifelse), 
                        (4, return atrib )]
 
-
 genWhile n = do 
     vars  <- get
     expb  <- lift $ genExpBool vars n
@@ -135,7 +150,7 @@ genIfElse n = do
     bloco2 <- genBloco n
     return $ IfElse expb bloco bloco2
     
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Shrinking 
 -------------------------------------------------------------------------------
 
@@ -170,23 +185,18 @@ shrinkInst ( Comment s ) = [ Comment s' | s' <- shrink s ]
 shrinkInst ( If e b    ) = [ (If e' b)  | e' <- shrinkExp e] ++ 
                            [ (If e  b') | b' <- shrinkBloco b]
 
+shrinkInst ( IfElse e b b2 ) = [ (IfElse e' b  b2 ) | e'  <- shrinkExp e   ] ++
+                               [ (IfElse e  b' b2 ) | b'  <- shrinkBloco b ] ++
+                               [ (IfElse e  b  b2') | b2' <- shrinkBloco b2]
 
-shrinkBloco  = undefined
--- FIXME FAZER OS RESTOS
---data Inst = Atrib  String Type Exp
---          | While  Exp Bloco
---          | IfElse Exp Bloco Bloco 
---          | If     Exp Bloco 
---          | Comment String
---          deriving (Data, Eq)
+shrinkInst ( While e b ) = [ (While e' b)  | e' <- shrinkExp e] ++ 
+                           [ (While e  b') | b' <- shrinkBloco b]
 
---type Bloco = [Inst]
---
---type Type = String
+shrinkInst (Atrib n t e  ) = [ Atrib n t e' | e' <- shrinkExp e]
 
+shrinkBloco l  = shrink l
 
-
-
+shrinkPico (Pico p) = [ Pico p' | p' <- shrink p ]
 
 --------------- TESTES --------------------------------------------------------
 

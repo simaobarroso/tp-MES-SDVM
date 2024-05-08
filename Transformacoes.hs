@@ -1,12 +1,17 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 import Data.Data
 import Data.Generics.Zipper
+
 import Library.Ztrategic
 import Library.StrategicData (StrategicData)
-import Picoc
+
 import Control.Monad
 
 import System.Random
+
+import Picoc
+import Types
+import ExemplosPico
 
 instance StrategicData Int
 instance StrategicData PicoC
@@ -51,40 +56,24 @@ mutInst ( IfElse e b b2) = Just (IfElse e b2 b)
 mutInst _ = Nothing
 
 
-applyMutation p = do  
+applyMutation p f = do  
         let z = toZipper p
-        novoz <- once_RandomTP z mutExp
+        novoz <- once_RandomTP z f
         return $ fromZipper novoz 
 
+-- aplica uma mutação as expressoes ou as instruções 50/50
+applyMPico p = do
+        result <- rf
+        if result > 0.5
+        then applyMutation p mutExp
+        else applyMutation p mutInst
 
-rf = randomRIO (0,1) :: IO Float
-
-applyMutation2 p = do
-        r <- rf 
-        if ( r > 0.5)
-        then do
-            novoz <- once_RandomTP (toZipper p) mutExp
-            return $ fromZipper novoz 
-        else do
-            novoz <- once_RandomTP (toZipper p) mutInst
-            return $ fromZipper novoz 
-
+-- para o programa do factorial, a2
+tarefa6 = do 
+    p <- applyMPico $ parser fact_test
+    runTestSuite p a2input
 
 
 
--------------------------------------------------------------------------------
-
-ex6 = Pico [ IfElse ( B True ) [(Atrib "x" "int" (Bigger (Const 1) (Const 3)))]
-            [ (Atrib "x" "int" (Bigger (Const 4) (Const 6))) ]]
-
-ex2 =  Pico [(Atrib "x" "int" (Mult (Const 1) (Add (Const 0) (Const 1))))]
-ex  = getPico l5
-ex3 = Pico [Atrib "margem" "int" (Add (Const 15) (Const 0)),
-                       IfElse (Equal (Fetch "margem") (B False))
-                       [Atrib "margem" "int" (Mult (Add (Const 0)(Const 4))(Add (Add (Const 23)(Const 0)) (Mult (Const 3)(Const 1))))]
-                       [Atrib "margem" "int" (Const 0)]]
-
-ex4 = Pico [If     (B False) [] , Atrib "i" "int" (Const 2)]
-ex5 = Pico [IfElse (B False) [] [Atrib "k" "char" (Char "ola")], Atrib "i" "int" (Const 2)]
 
 
