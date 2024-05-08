@@ -13,9 +13,6 @@ import Library.Probability
 import Types
 
 
-
-
-
 -- maping functions of ariety 1
 trimap f f2 f3 (L x) = L (f  x)
 trimap f f2 f3 (M x) = M (f2 x)

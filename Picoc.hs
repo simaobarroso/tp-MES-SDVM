@@ -18,6 +18,9 @@ infixl 3 ...
 
 -- import Data.Generics.Aliases
 
+-------------------------------------------------------------------------------
+-- Tarefas dos enunciado final
+-------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- Equivalence properties
@@ -42,24 +45,26 @@ prop3 πcoc = do b <- prop2 πcoc; return $ (prop1 πcoc) == b
 
 equivalence p q = p ~ q
 
-
--------------------------------------------------------------------------------
--- Tarefas dos enunciado final
 -------------------------------------------------------------------------------
 
+-- tarefa 1 -> está no Interpreter.hs
+
+-- tarefa 2 
 runTest :: PicoC -> (Context, Out String Bool Int) -> IO Bool
 runTest (Pico p) (i,r) = liftM2 (==) (return r) (getReturn <$> run p i )
 
+
+-- tarefa 3 
+runTestSuite :: PicoC -> [(Context, Out String Bool Int)] -> IO Bool
+runTestSuite = allM . sequence ... map . runTest 
 
 -- blackbird combinator (.: no Data.Composition) 
 (...) = (.).(.)
 
 allM  = liftM $ all id
 
-runTestSuite :: PicoC -> [(Context, Out String Bool Int)] -> IO Bool
-runTestSuite = allM . sequence ... map . runTest 
 
-
+-- tarefa 4 
 a  = runTestSuite (parser programa1) [ ([("a",R 3),("b",R 9),("c",R 1)], R 9),
                                        ([("a",R 3),("b",R 0),("c",R 1)], R 3) ]
 
@@ -79,6 +84,13 @@ a3input = [
 
 --res = runTest (parser fact) ([],(R 1307674368000))
 
+-- tarefa 5 -> está no Transformacoes.hs
+
+-- tarefa 6 FIXME
+-- tarefa 7 -> está no Interpreter.hs
+-- tarefa 8 FIXME NÃO SEI QUE É ISTO
+-- tarefa 9 -> FIXME ainda não está no Interpreter.hs 
+
 instrumentation :: PicoC -> PicoC
 instrumentation = undefined 
 
@@ -90,4 +102,5 @@ instrumentation = undefined
 instrumentedTestSuite :: PicoC ->  [(Context, Out String Bool Int)] -> Bool
 instrumentedTestSuite = undefined 
 
+-- tarefa 7 -> está no Interpreter.hs
 
