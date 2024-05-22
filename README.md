@@ -32,19 +32,27 @@ A linguagem é definida por meio de uma estrutura de dados em Haskell. A seguir,
 
 ### Exp Expressões 
 
-Igualdade - "=="
-Maior - ">"
-Menor - "<"
+Tipicamente a negação lógica tem baixa prioridade mas como esta negação é polimórfica também é numérica por isso atribuímos muita
+prioridade.
 
-Soma - "+"
-Subtração - "-"
+Nível de prioridade mais baixo:
+* Igualdade - "=="
+* Maior - ">"
+* Menor - "<"
 
-Negação - "~"
-Divisão inteira - "/"
-Resto da divisão - "%"
-Multiplicação - "*"
+Nível 2 de prioridade:
+* Soma - "+"
+* Subtração - "-"
 
-Parentesis - "(" e ")"
+Nível 3 de prioridade:
+* Divisão inteira - "/"
+* Resto da divisão - "%"
+* Multiplicação - "\*"
+* Negação - "~"
+
+Nível com mais prioridade:
+* Parentesis - "(" e ")"
+
 
 
 ## Implementação do Parser
@@ -80,7 +88,7 @@ satisfy''  a = (\_ k _ -> k) <$$> spaces <**> satisfy  a <**> spaces
 ```
 ## Ambiguidades 
 
-A ambiguidade de espaços surge porque estamos a consumir espaços tanto no início quanto no fim do parsing. Isto é necessário para cobrir casos como "if   (     a ==    0 ) then    {" ou mesmo "int  i    =    0  ;", onde há muitos espaços ao redor de um padrão. Ao usar estes combinadores ocorrem alguns problemas. Quando um tenta consumir espaços no final do parsing, mas o parser seguinte também consome espaços no início. Isso gera situações ambíguas quando há espaços extras. Por exemplo, se colocarmos um espaço nessa situação surgem 2 situações possíveis; se colocarmos 2 espaços, isso gera 4 combinações, resultando num comportamento exponencial.
+A ambiguidade de espaços surge porque estamos a consumir espaços tanto no início quanto no fim do parsing. Isto é necessário para cobrir casos como `"if   (     a ==    0 ) then    {"` ou mesmo `"int  i    =    0  ;"`, onde há muitos espaços ao redor de um padrão. Ao usar estes combinadores ocorrem alguns problemas. Quando um tenta consumir espaços no final do parsing, mas o parser seguinte também consome espaços no início. Isso gera situações ambíguas quando há espaços extras. Por exemplo, se colocarmos um espaço nessa situação surgem 2 situações possíveis; se colocarmos 2 espaços, isso gera 4 combinações, resultando num comportamento exponencial.
 
 
 Tentamos usar com cuidado estes combinadores para evitar consumir espaços no mesmo síteo quando há dois parsers seguidos. Mesmo assim quando chamamos tentamos dar parsing a uma função fatorial temos 24 ambiguidades onde o parsing correu bem e são árvores de sintaxe corretas. Para diminuir o impacto tentamos pegar na primeira ocorrencia correta do parsing, para que ele seja lazy e pare logo quando encontrar uma válida.
@@ -105,8 +113,8 @@ PROPRIEDADE DE UNPARSING não dá para dists... teria que mudar a implementaçã
 
 ## Implementação do Gerador
 Os geradores foram implementados utilizando o monad de estado para manter o nome das variáveis disponíveis durante a geração de expressões.
-O gerador de expressões inteiros (gei) e de caracteres (ges) constroem recursivamente expressões compostas de constantes e operadores aritméticos, não inclui de boleanos porque se numa expressão númerica colcar um < menor, a expressão já não é do domínio dos inteiros mas dos boleanos. O gerador de expressões booleanas (geb) segue uma abordagem similar, mas inclui operadores booleanos. 
-O gerador de atribuição (genAtrib) utiliza o estado de variáveis disponíveis com nomes gerados aleatoriamente e tipos definidos de forma arbitrária. Também gera uma expressão do tipo que sorteou. 
+O gerador de expressões inteiros `gei` e de caracteres `ges` constroem recursivamente expressões compostas de constantes e operadores aritméticos, não inclui de boleanos porque se numa expressão númerica colcar um < menor, a expressão já não é do domínio dos inteiros mas dos boleanos. O gerador de expressões booleanas `geb` segue uma abordagem similar, mas inclui operadores booleanos. 
+O gerador de atribuição `genAtrib` utiliza o estado de variáveis disponíveis com nomes gerados aleatoriamente e tipos definidos de forma arbitrária. Também gera uma expressão do tipo que sorteou. 
 Essa abordagem permite a criação de programas variados e complexos para testar propriedades específicas usando o QuickCheck.
 
 Também foi implementada uma função shrink para o PicoC.
@@ -171,11 +179,13 @@ Quando temos comentários ou casos de while (False) ou um if (False) retornamos 
 
 
 Achamos que era boa ideia retirar-mos muitas das otimizações sugeridas, como por exemplo:
-> Add a + 0 = a
-> Add a + 1 = a
-> Mult a * 0 = 0
-> Mult a 1 = a
-> Add a b = a + b
+```
+Add a + 0 = a
+Add a + 1 = a
+Mult a * 0 = 0
+Mult a 1 = a
+Add a b = a + b
+```
 
 Se o nosso programa fosse ser compilado em vez de interpretado, talvez fize-se sentido avaliar constantes sempre que elas aparecessem na
 árvose de sintaxe. Como vai ser interpretado estas otimizações não passam de uma função de avaliação para casos simples, decidimos que estas otimizações são demasiados destrutivas da árvore de parsing e por isso devem ser retiradas. 
