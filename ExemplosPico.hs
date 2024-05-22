@@ -9,6 +9,18 @@ import Library.Probability
 -- EXEMPLOS DEBUGGING
 -------------------------------------------------------------------------------
 
+programa3M_Final = "int dado1 = D (normal,[2,3,9,10]); if (((dado2 + dado1) % 2) == 0 ) then { return = \"par\";} else {return = \"impar\";}"
+
+-- a soma de dois números par é par
+programa8 = "int dado1 = D (normal,[2,4,6,8]); if (((dado2 + dado1)%2) == 0 ) then { return = \"par\";} else {return = \"impar\";}"  
+
+programa2M_Final ="if(n==0) then{ int fact = 1; } else{ int i = 1; int fact = 1; while (i<n+2){ fact = (fact)*(i); i = i+1; }}return = fact;"
+
+programa1M_Final = "if(a>b) then{ if(b>c) then{ m = b; } else{ m = c; } } else{ if(a>c) then{ m = a; } else{ m = c; } }print(\"O maior número é\") print(m) return = m;"
+
+--r = run b []
+ --   where (Pico b) =  getPico fact
+
 dados :: PicoC
 dados = Pico [
     Atrib "x" "int" $ D2 (uniform [1..10]),
@@ -16,9 +28,6 @@ dados = Pico [
     Atrib "z" "int" $ Mult (Fetch "x") (Fetch "y")
     ]
 
-
---r = run b []
- --   where (Pico b) =  getPico fact
 
 fact = "int n = 15; if ( n == 0 ) then { int fact = 1; } else { int i = 1; int fact = 1; while ( i < n + 1 ) { fact = fact * i; i = i + 1; } } return = fact;"
 
@@ -51,7 +60,7 @@ p2 = "int margem=15+0;\nif(margem>(30)*(1))\nthen{\nint margem=(0+4)*(23+0+(3)*(
 --p = unparse eC3
 
 programa0 = fact
-programa1 = "if (a > b) then { if ( b > c ) then { m = b; } else { m = c; } } else { if ( a > c )  then { m = a; } else { m = c; } } return = m; "
+programa_aula = "if (a > b) then { if ( a > c ) then { m = a; } else { m = c; } } else { if ( b > c )  then { m = b; } else { m = c; } } return = m; "
 
 
 

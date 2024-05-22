@@ -4,50 +4,55 @@ import Parser
 import ExemplosPico
 import Types
 import Interpreter
-
-
-
-
-
+import Transformacoes
+-- import Data.Generics.Aliases
+import Library.Probability
 
 import Control.Monad
-
-
-
 infixl 3 ...
-
--- import Data.Generics.Aliases
-
 -------------------------------------------------------------------------------
--- Tarefas dos enunciado final
+-- TAREFAS DOS ENUNCIADO FINAL
 -------------------------------------------------------------------------------
 
+
 -------------------------------------------------------------------------------
--- Equivalence properties
+-- Equivalence properties, parser . unparser
 -------------------------------------------------------------------------------
 
 pu = parser . unparse
 
--- πcoc le-se PicoC, não é Peacock (pavão)
-
--- equivalencia da árovore 
-prop1 πcoc = πcoc == pu πcoc
-
--- "equivalencia" na semantica
-prop2 πcoc = πcoc ~ pu πcoc
-
--- equivalencia nos dois
-prop3 πcoc = do b <- prop2 πcoc; return $ (prop1 πcoc) == b
-
-
 (~) :: PicoC -> PicoC -> IO Bool
 (Pico p) ~ (Pico q) = liftM2 (==) (run p []) (run q [])
 
-equivalence p q = p ~ q
+
+-- f >>= k = \ r -> k (f r) r
+
+-------------- EQUIVALENCIA DA ÁRVORE ----------------------
+--prop1 πcoc = πcoc == pu πcoc
+prop1 = pu >>= (==)
+
+-------------- "EQUIVALENCIA" NA SEMANTICA -----------------
+--prop2 πcoc = πcoc ~ pu πcoc
+prop2 = pu >>= (~)
+
+------------- EQUIVALENCIA NA ÁRVORE E SEMÂNTICA -----------
+
+-- πcoc le-se PicoC, não é Peacock (pavão)
+
+-- prop3 πcoc = fmap ( == prop1 πcoc) (prop2 πcoc)
+prop3 = phoenix ((<$>) . (==)) prop1 prop2
+
+-- phoenix combinator
+-- https://blog.lahteenmaki.net/combinator-birds.html
+phoenix = (ap .) . (.)
+
 
 -------------------------------------------------------------------------------
 
 -- tarefa 1 -> está no Interpreter.hs
+-- tarefa 5 -> está no Transformacoes.hs
+-- tarefa 7 -> está no Interpreter.hs
+-- tarefa 9 -> está no Interpreter.hs 
 
 -- tarefa 2 
 runTest :: PicoC -> (Context, Out String Bool Int) -> IO Bool
@@ -57,43 +62,53 @@ runTest (Pico p) (i,r) = liftM2 (==) (return r) (getReturn <$> run p i )
 -- tarefa 3 
 runTestSuite :: PicoC -> [(Context, Out String Bool Int)] -> IO Bool
 runTestSuite = allM . sequence ... map . runTest 
-
+ 
 -- blackbird combinator (.: no Data.Composition) 
+-- https://blog.lahteenmaki.net/combinator-birds.html
 (...) = (.).(.)
 
 allM  = liftM $ all id
 
 
 -- tarefa 4 
-a  = runTestSuite (parser programa1) [ ([("a",R 3),("b",R 9),("c",R 1)], R 9),
-                                       ([("a",R 3),("b",R 0),("c",R 1)], R 3) ]
+programa1 = parser programa_aula
+programa2 = parser fact_test
+programa3 = parser programa8
 
 
-a2 = runTestSuite ( parser fact_test ) a2input
+teste1 = runTestSuite programa1 input1  -- programa da aula
+input1 = [
+    ([("a",R 4),          ("b", R 3)     , ("c", R 0)] ,R 4),
+    ([("a",R (-100)),     ("b", R (-200)), ("c", R (-101))] ,R (-100)),
+    ([("a",L "bacalhau"), ("b", L "atum"), ("c", L "arroz de frango")] ,L "bacalhau") ]
 
-a2input = [([("n",R 0)],  R 1),
+teste2 = runTestSuite programa2 input2
+input2  = [([("n",R 0)],  R 1),
            ([("n",R 1)],  R 1),
            ([("n",R 15)], R 1307674368000)]
 
-a3 = runTestSuite (parser "if ( a > b ) then { return = a;} else { return = b;}") a3input
+teste3 = runTestSuite programa3 input3
+input3 = [ ([("dado2", R 123456890) ], L "par"),
+           ([("dado2", R 8) ]        , L "par"),
+           ([("dado2", R 1) ]        , L "impar") ]
 
-a3input = [
-    ([("a",R 4),          ("b", R 3)     ] ,R 4),
-    ([("a",R (-100)),     ("b", R (-200))] ,R (-100)),
-    ([("a",L "bacalhau"), ("b", L "atum")] ,L "bacalhau") ]
 
---res = runTest (parser fact) ([],(R 1307674368000))
+-- tarefa 6
 
--- tarefa 5 -> está no Transformacoes.hs
+programa1M = applyMPico programa1
+programa1Mut = parser programa1M_Final
 
--- tarefa 6 FIXME
--- tarefa 7 -> está no Interpreter.hs
+programa2M = applyMPico programa2
+programa2Mut = parser programa2M_Final
+
+programa3M = applyMPico programa3
+programa3Mut = parser programa3M_Final
+
 -- tarefa 8 FIXME NÃO SEI QUE É ISTO
--- tarefa 9 -> FIXME ainda não está no Interpreter.hs 
+
 
 instrumentation :: PicoC -> PicoC
 instrumentation = undefined 
-
 
 -- Não vou defenir esta função, porque já existe um interpretador debug
 -- que imprime no ecra a instrução que está a executar
@@ -101,6 +116,4 @@ instrumentation = undefined
 
 instrumentedTestSuite :: PicoC ->  [(Context, Out String Bool Int)] -> Bool
 instrumentedTestSuite = undefined 
-
--- tarefa 7 -> está no Interpreter.hs
 

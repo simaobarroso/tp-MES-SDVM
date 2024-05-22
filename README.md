@@ -31,20 +31,87 @@ A linguagem é definida por meio de uma estrutura de dados em Haskell. A seguir,
 - **Polimorfismo**: Implementa funções polimórficas básicas, como adição e multiplicação, para lidar com diferentes tipos de entrada de forma coerente.
 
 ## Implementação do Parser
-FIXME
+### Novos combinadores de parsing 
+Quando se tenta fazer um parser para consumir várias palavras:
+
+> palavras = zeroOrMore (satisfy' isAlphaNum)
+
+Temos que consome uma string com espaços e devolve as palavras concatenadas sem os espaços
+> palavras "a b" = [("","a b"),("a"," b"),("a","b"),("ab","")]
+
+Mas se usar o satisfy sem a plica temos que:
+> palavras "a b" = [("","a b"),("a"," b")]
+
+neste caso fico com um espaço no início da linha o parsing não termina.
+
+Por isso é útil consumir espaços não só fim com o no início. Surge a necessidade de criar novos combinadores:
+
+```
+symbol''   a = (\_ k _ -> k) <$$> spaces <**> symbol   a <**> spaces
+token''    a = (\_ k _ -> k) <$$> spaces <**> token    a <**> spaces
+optional'' a = (\_ k _ -> k) <$$> spaces <**> optional a <**> spaces
+satisfy''  a = (\_ k _ -> k) <$$> spaces <**> satisfy  a <**> spaces
+```
+## Ambiguidades 
+
+A ambiguidade de espaços surge porque estamos a consumir espaços tanto no início quanto no fim do parsing. Isto é necessário para cobrir casos como "if   (     a ==    0 ) then    {" ou mesmo "int  i    =    0  ;", onde há muitos espaços ao redor de um padrão. Ao usar estes combinadores ocorrem alguns problemas. Quando um tenta consumir espaços no final do parsing, mas o parser seguinte também consome espaços no início. Isso gera situações ambíguas quando há espaços extras. Por exemplo, se colocarmos um espaço nessa situação surgem 2 situações possíveis; se colocarmos 2 espaços, isso gera 4 combinações, resultando num comportamento exponencial.
+
+
+Tentamos usar com cuidado estes combinadores para evitar consumir espaços no mesmo síteo quando há dois parsers seguidos. Mesmo assim quando chamamos tentamos dar parsing a uma função fatorial temos 65 ambiguidades das quais 24 o parsing correu bem e são árvores de sintaxe corretas. Outra forma que usamos para tentar diminuir o impacto é pegar na primeira ocorrencia correta do parsing, tentamos que ele seja lazy e pare logo quando encontrar uma válida.
+
+### Distribuições
+Usamos um módulo com o monad das distribuições que é fornecido na cadeira de cálculo de programas.
+
+Existem 2 notações para distribuições que o nosso parser aceita:
+
+    "int i = D (normal ,[1,100,80,30])"
+    Constrói uma distribuição normal com elementos que sejam colocados numa lista
+
+    "int i = D (uniform,1,100)"
+    Constrói uma distribuição uniform com os elementos entre 1 e 100, como se tivessemos a lista [1..100]
+
+
+Operações possíveis , resto da divisão, divisão inteira
+
+
+
+#FIXME
+PROPRIEDADE DE UNPARSING não dá para dists... teria que mudar a implementação do show
+
+## Implementação do Gerador
+Os geradores foram implementados utilizando o monad de estado para manter o nome das variáveis disponíveis durante a geração de expressões.
+O gerador de expressões inteiros (gei) e de caracteres (ges) constroem recursivamente expressões compostas de constantes e operadores aritméticos, não inclui de boleanos porque se numa expressão númerica colcar um < menor, a expressão já não é do domínio dos inteiros mas dos boleanos. O gerador de expressões booleanas (geb) segue uma abordagem similar, mas inclui operadores booleanos. 
+O gerador de atribuição (genAtrib) utiliza o estado de variáveis disponíveis com nomes gerados aleatoriamente e tipos definidos de forma arbitrária. Também gera uma expressão do tipo que sorteou. 
+Essa abordagem permite a criação de programas variados e complexos para testar propriedades específicas usando o QuickCheck.
+
+Também foi implementada uma função shrink para o PicoC.
 
 ## Implementação do Interpretador
 
 Uma função de interpretação, `runP :: Programa -> Context -> IO Context`, foi desenvolvida para executar programas escritos na linguagem. Esta função executa as instruções do programa e mantém um contexto atualizado das variáveis criadas durante a execução.
 
+Foram feitos 2 interpretadores para auxiliar a instrumentação de programas
+* runDebug :: [Inst] -> Context -> IO Context, Este interpretador, imprime para o ecra o tipo de instrução que está a
+  ser executado e devolve a memória como um normal.
+* runL :: [Inst] -> Context -> [Inst] -> IO [Inst], Este devolve uma lista das intruções que foram executadas no programa
+
 ## Exemplos de Polimorfismo
 
-Criamos um tipo Out que representa o nosso output no PicoC que é um trifuntor:
+
+A primeira tentativa foi usar o tipo Either mas não é adequado devido à sua limitação em aplicar funções diretamente a valores encapsulados, Como Either é um funtor não é possivel aplicar funções a ambos Left e Right, seria um bifuntor se fosse possível.
+```
+ghci> fmap (+3) (Left 4)
+Left 4
+ghci> liftM2 (+) (Left 179) (Left 12345)
+Left 179
+```
+
+Por isso, criamos um tipo Out que representa o nosso output no PicoC que é um trifuntor com os tipos:
     * String
     * Integer
     * Bool
 
-Implementamos um trimfmap para que fosse possível implementar polimorfismo sobre algumas funções básicas do tipo do output. Quando na árvore de parsing há diferentes valores posso aplicar funções diferentes. O comportamento polimorfico da nossa função de avaliação é o seguinte:
+Implementamos um trimfmap para que fosse possível aplicar funções sobre Out e também implementar polimorfismo sobre algumas funções básicas. Quando na árvore de parsing há diferentes valores posso aplicamos funções diferentes. O comportamento polimorfico da nossa função de avaliação é o seguinte:
 > Neg 4 = -4
 > Neg False = True
 > "asd" + "ola" = "asd" ++ "ola"
@@ -53,10 +120,8 @@ Implementamos um trimfmap para que fosse possível implementar polimorfismo sobr
 >  3    * 8     = 3 * 8
 > True  * True  = True && True
 
-Por quando não há defenido uma função para um tipo por
-exemplo a multiplicação de Strings usamos uma função
-"identidade" de aridade 2, é uma função constante que
-retorna só o segundo elemento.
+Por quando não há defenido uma função para um tipo, por exemplo a multiplicação de Strings usamos uma função
+"identidade" de aridade 2, que na prática é uma função constante e retorna só o segundo elemento.
 
 ## Tranformações , mutações essas cenas
 FIXME
@@ -85,14 +150,14 @@ Achamos que era boa ideia retirar-mos muitas das otimizações sugeridas, como p
 > Mult a 1 = a
 > Add a b = a + b
 
-Se temos os elementos neutros e absorventes da adição e a sua soma também teriamos que ter para os outros tipos implementados: String e Bool. O nosso código tornar-se-ia muito repetitivo. Também, estas "melhorias" parecem que não passão de uma função de avaliação para casos simples, decidimos que estas otimizações são demasiados destrutivas da árvore de parsing e por isso devem ser retiradas.
+Se temos os elementos neutros e absorventes da adição e a sua soma também teriamos que ter para os outros tipos implementados: String e Bool. O nosso código tornar-se-ia muito repetitivo. Também, estas "melhorias" parecem que não passam de uma função de avaliação para casos simples, decidimos que estas otimizações são demasiados destrutivas da árvore de parsing e por isso devem ser retiradas.
 
 
 
 
 ## Exemplo de Execução
 
-Para correr o programa chamarmos a função run com a árvore dados e uma memória vaiza
+Para correr o programa chamarmos a função run com a árvore dados e uma memória vazia
 run dados [] e obtemos a memória final depois da execução.
 
 ```

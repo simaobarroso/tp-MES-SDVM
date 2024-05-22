@@ -5,6 +5,7 @@ module Parser where
 import Data.Char
 
 import Types
+import Library.Probability
 
 
 infixl 2 <|>
@@ -102,7 +103,29 @@ myisAlphaNum  = flip elem $ '_':['a'..'z']++['A'..'Z']++['0'..'9']
 
 ----------- PARSER PICOC ------------------------------------------------------
 
+pList :: Parser [Int]
+pList = enclosedBy (symbol' '[') (separatedBy pInt2 (symbol ',')) (symbol' ']')
 
+pInt2 :: Parser Int   
+pInt2 = f <$$> pSinal2 <**> pDigitos
+    where f x y = read $ x:y
+
+pString = f <$$> symbol '\"' 
+            <**> zeroOrMore (satisfy (/='\"')) 
+            <**> symbol '\"'
+    where f a b c = b 
+
+
+pDigitos =  f <$$> satisfy isDigit
+        <|> g <$$> satisfy isDigit <**> pDigitos
+      where f d = [d]
+            g d ds = d:ds
+
+ 
+pSinal2 = symbol  '-' 
+      <|> f <$$> symbol  '+'
+      <|> f <$$> yield '+'
+   where f = const '0'
 
 
 var = f <$$> satisfy primeiraletra <**> zeroOrMore (satisfy isAlphaNum) 
@@ -117,6 +140,19 @@ valor =   Const <$$> pInt2
      <|>  Char  <$$> pString
      <|>  B     <$$> bool2
      <|>  Fetch <$$> var
+     <|>  dist
+
+dist = f <$$> symbol' 'D' <**> symbol' '(' 
+                   <**> var   <**> symbol'' ','  
+                   <**> pInt2 <**> symbol'' ','
+                   <**> pInt2 <**> (symbol'' ')') 
+    <|> g <$$> symbol' 'D' <**> symbol' '(' 
+                   <**> var <**> symbol'' ',' <**> pList <**> (symbol'' ')') 
+    where 
+       f _ _ "uniform" _ a _ b _ = D2 (uniform [a..b])
+       f _ _ _ _ a _ b _         = D2 (normal [a..b])
+       g _ _ "uniform" _ l _ = D2 (uniform l)
+       g _ _ _ _ l _         = D2 (normal l)
 
 -- safe head function
 sh [] = []
@@ -136,7 +172,6 @@ atrib2 =  f <$$> mytype <**> davalor <**> symbol' ';'
 --    where f t n [] _  = Atrib n (sh t) Empty
 --          f t n exp _ = Atrib n (sh t) (head exp)
 --          j a b = b
-
 
 mytype =  (token' "char")
       <|> (token' "int" )
@@ -212,94 +247,25 @@ exp1 = f <$$> exp0 <**> symbol'' '+' <**> exp1
       where f e _ e2 = Add e e2
             g e _ e2 = Sub e e2
 
-exp0 = f <$$> fator <**> symbol'' '*' <**> exp0
-   <|> h <$$> symbol'' '~' <**> exp0
-   <|>        fator
-    where f e _ e2 = Mult e e2
-          h _ e = Neg e
+exp0 =  f <$$> fator <**> symbol'' '*' <**> exp0
+    <|> g <$$> fator <**> symbol'' '%' <**> exp0
+    <|> j <$$> fator <**> symbol'' '/' <**> exp0
+    <|> h <$$> symbol'' '~' <**> exp0
+    <|>        fator
+     where f e _ e2 = Mult e e2
+           g e _ e2 = RDiv e e2
+           j e _ e2 = Div e e2
+           h _ e = Neg e
 
 fator =         valor
      <|> f <$$> symbol' '(' <**> exp2 <**> symbol' ')'
      where f _ k _ = k
 
-
-
-
-
 -------------------------------------------------------------------------------
-
 
 parser = Pico . fst . head . filter (null . snd)  . linhas'
 
 unparse (Pico i) = concatMap show i
 
 getReturn = snd . head . filter ((=="return"). fst)
-
-
-
-
--------------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
----- Exemplos das aulas --------------------------------------------------------
--- FIXME
-pListasIntHaskell = 
-    enclosedBy (symbol '[') 
-               (separatedBy pInt (symbol ',') ) 
-               (symbol '[')
-
-blocoCodigoC = 
-    enclosedBy (symbol '{')
-               (followedBy pInt (symbol ';'))
-               (symbol '}')
-
-
-pInt = f <$$> pSinal <**> pDigitos
-    where f x y = x:y
-
-pSinal = symbol  '-'
-      <|> symbol  '+'
-      <|> yield '+'
-
-pInt4 = f <$$> optional (pSinal) <**> oneOrMore ( satisfy isDigit)
-    where  f a b = a ++ b
-
-
-pDigitos =  f <$$> satisfy isDigit
-        <|> g <$$> satisfy isDigit <**> pDigitos
-      where f d = [d]
-            g d ds = d:ds
-
-pString = f <$$> symbol '\"' 
-            <**> zeroOrMore (satisfy (/='\"')) 
-            <**> symbol '\"'
-    where f a b c = b 
-
-
-pInt2 :: Parser Int   
-pInt2 = f <$$> pSinal2 <**> pDigitos
-    where f x y = read $ x:y
- 
-pSinal2 = symbol  '-' 
-      <|> f <$$> symbol  '+'
-      <|> f <$$> yield '+'
-   where f = const '0'
 

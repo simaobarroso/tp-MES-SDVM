@@ -4,12 +4,13 @@ import Control.Monad
 import Control.Monad.Trans.State.Lazy
 import Control.Monad.Trans.Class
 
-import Test.QuickCheck  hiding ((><))
+import Test.QuickCheck 
 import Test.QuickCheck.Function 
 
 import Data.List
 import Data.Char
 
+import Parser
 import Picoc
 import Types
 
@@ -17,9 +18,6 @@ type Gerador st a = StateT st Gen a
 
 executar :: st -> Gerador st a -> Gen a
 executar st g = evalStateT g st
-
-split f g x = (f x, g x)
-f >< g = split (f . fst) (g . snd)
 
 -------------------------------------------------------------------------------
 -- Generators
@@ -84,7 +82,7 @@ geb n = do
         r  <- lift $ frequency $ (4, B <$> arbitrary): commom e1 e2 v ++ commom_b e1 e2 
         return r
 
-genExp v n = oneof $ executar v <$> ($div n 2) <$> [ ges, gei, geb ]
+genExp v n = oneof $ executar v <$> ($ div n 2) <$> [ ges, gei, geb ]
 
 genExpBool   v n = executar v $ geb  $ div n 2
 genExpInt    v n = executar v $ gei  $ div n 2

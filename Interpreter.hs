@@ -52,6 +52,8 @@ eval (Fetch   a  ) c = return $ fromJust $ lookup a c
 eval (D2      d  ) _ = R     <$> getFromDist d
 
 eval (Neg     a  ) c = trimap  id   not  negate <$> eval a c
+eval (RDiv    a b) c = trimap2 id2  id2  mod    <$> eval a c <*> eval b c
+eval (Div     a b) c = trimap2 id2  id2  div    <$> eval a c <*> eval b c
 eval (Add     a b) c = trimap2 (++) (||) (+)    <$> eval a c <*> eval b c
 eval (Mult    a b) c = trimap2 id2  (&&) (*)    <$> eval a c <*> eval b c
 eval (Smaller a b) c = comp2   (<)  (<)  (<)    <$> eval a c <*> eval b c
@@ -114,9 +116,8 @@ run [] c = return c
 
 runP (Pico p) = run p []
 -------------------------------------------------------------------------------
--- Run debugging with prints of the intruction set
+-- Tarefa 7. Imprime a intrução que correr
 -------------------------------------------------------------------------------
--- Tarefa 7.
 
 runDebug :: [Inst] -> Context -> IO Context
 runDebug ((If e b):t)  c = do
@@ -153,3 +154,41 @@ runDebug (atrib:t) c    = do
 runDebug [] c = return c
 
 runDebugP (Pico p) = runDebug p []
+
+-------------------------------------------------------------------------------
+-- Tarefa 9. Devolve a lista de intruções de executou
+-------------------------------------------------------------------------------
+
+runL :: [Inst] -> Context -> [Inst] -> IO [Inst]
+runL (i@(If e b):t) c l = do
+    valor <- eval e c
+    if fromOut valor
+    then runL (b  ++ t) c (i:l)
+    else runL t c (i:l)
+runL (i@(IfElse e b b2):t) c l = do
+    valor <- eval e c
+    if fromOut valor 
+    then runL (b  ++ t) c (i:l)
+    else runL (b2 ++ t) c (i:l)
+
+runL (w@(While e b):t ) c l = do
+    valor <- eval e c
+    if fromOut valor 
+    then runL (b ++ [w] ++  t) c (w:l) 
+    else runL t c (w:l) 
+
+runL (i@(Wait k):t)  c l = wait k >> runL t c (i:l)
+
+runL (i@(Print e):t) c l = do 
+    valor <- eval e c 
+    putStr $ showOut valor
+    runL t c (i:l)
+
+runL (atrib:t) c l = do
+    nc <- put2 atrib c 
+    runL t nc (atrib:l)
+
+runL [] c l = return l
+
+runPL (Pico p) = runL p [] []
+

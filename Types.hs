@@ -23,8 +23,8 @@ data Inst = Atrib  String Type Exp
           | If     Exp Bloco 
           | Comment String
           | Wait   Int 
-          | Idle
           | Print Exp
+          | Idle
           deriving (Data, Eq)
 
 data Exp = D2 (Dist Int)
@@ -38,6 +38,8 @@ data Exp = D2 (Dist Int)
          | Add     Exp Exp
          | Sub     Exp Exp
          | Mult    Exp Exp
+         | RDiv    Exp Exp
+         | Div     Exp Exp
          | Bigger  Exp Exp
          | Smaller Exp Exp
          | Equal   Exp Exp
@@ -86,6 +88,8 @@ instance Show Exp where
     show (B      a )    = show a 
     show (D2     d )    = show d
     show (Sub     e e2) = show e ++ "-"  ++ show e2 
+    show (RDiv    e e2) = show e ++ "%"  ++ show e2 
+    show (Div     e e2) = show e ++ "/"  ++ show e2 
     show (Mult    e e2) = "(" ++ show e ++ ")" ++ "*" ++"(" ++ show e2 ++ ")"
     show (Add     e e2) = show e ++ "+"  ++ show e2
     show (Smaller e e2) = show e ++ "<"  ++ show e2 
@@ -96,6 +100,3 @@ instance Show Exp where
 showOut (L s ) = s
 showOut (M b ) = show b
 showOut (R r ) = show r
--------------------------------------------------------------------------------
-
-
