@@ -43,7 +43,7 @@ data Exp = D2 (Dist Int)
          | Bigger  Exp Exp
          | Smaller Exp Exp
          | Equal   Exp Exp
-         deriving (Data)
+         deriving (Data,Eq)
          
 data Out l m r = L l | M m | R r
     deriving (Data,Show, Eq)
@@ -58,8 +58,9 @@ data Out l m r = L l | M m | R r
 --      -> a
          
 
-instance Eq Exp where
-    e1 == e2 = show e1 == show e2 
+--instance Eq Exp where
+--    e1 == e2 = show e1 == show e2 
+    
     
 -------------------------------------------------------------------------------
 -- Unparser -- Show instances
@@ -90,7 +91,7 @@ instance Show Exp where
     show (Sub     e e2) = show e ++ "-"  ++ show e2 
     show (RDiv    e e2) = show e ++ "%"  ++ show e2 
     show (Div     e e2) = show e ++ "/"  ++ show e2 
-    show (Mult    e e2) = "(" ++ show e ++ ")" ++ "*" ++"(" ++ show e2 ++ ")"
+    show (Mult    e e2) = "(" ++ show e ++ "*" ++ show e2 ++ ")"
     show (Add     e e2) = show e ++ "+"  ++ show e2
     show (Smaller e e2) = show e ++ "<"  ++ show e2 
     show (Bigger  e e2) = show e ++ ">"  ++ show e2 

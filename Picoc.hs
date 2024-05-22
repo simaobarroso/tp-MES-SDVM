@@ -27,7 +27,7 @@ pu = parser . unparse
 
 -- f >>= k = \ r -> k (f r) r
 
--------------- EQUIVALENCIA DA ÁRVORE ----------------------
+-------------- EQUIVALENCIA DA ÁRVORE SINTAXE ABSTRATA ----------------------
 --prop1 πcoc = πcoc == pu πcoc
 prop1 = pu >>= (==)
 

@@ -1,8 +1,8 @@
 # Relatório de Linguagem e Implementação de Interpretação
 
-## João Alvim - pg53902 - 03/05/2024 
-## João Alvim - pg53902 - 03/05/2024 
-## João Alvim - pg53902 - 03/05/2024 
+### João Afonso Alvim Oliveira Dias de Almeida - pg53902@alunos.uminho.pt
+### Simão Oliveira Alvim Barroso - pg54236@alunos.uminho.pt
+### Simão Pedro Cunha Matos - pg54239@alunos.uminho.pt
 
 ## Introdução
 
@@ -30,21 +30,47 @@ A linguagem é definida por meio de uma estrutura de dados em Haskell. A seguir,
 
 - **Polimorfismo**: Implementa funções polimórficas básicas, como adição e multiplicação, para lidar com diferentes tipos de entrada de forma coerente.
 
+### Exp Expressões 
+
+Igualdade - "=="
+Maior - ">"
+Menor - "<"
+
+Soma - "+"
+Subtração - "-"
+
+Negação - "~"
+Divisão inteira - "/"
+Resto da divisão - "%"
+Multiplicação - "*"
+
+Parentesis - "(" e ")"
+
+
 ## Implementação do Parser
+
+No parser em vez de usarmos o combinador \<\$\> e o \<\*\> usamos um igual mas com outro nome, o \<\$\$\> e o \<\*\*\> para evitar
+conflitos e não se confundir com o map sobre funtores e o map sobre funtores aplicativos.
+
 ### Novos combinadores de parsing 
-Quando se tenta fazer um parser para consumir várias palavras:
+Tivemos que definir novos combinadores, surgiram algumas dificuldades por exemplo: quando se tenta fazer um parser para consumir várias palavras seguidas temos a seguinte defenição:
 
-> palavras = zeroOrMore (satisfy' isAlphaNum)
+```
+palavras = zeroOrMore (satisfy' isAlphaNum)
+```
 
-Temos que consome uma string com espaços e devolve as palavras concatenadas sem os espaços
-> palavras "a b" = [("","a b"),("a"," b"),("a","b"),("ab","")]
+```
+palavras "a b" = [("","a b"),("a"," b"),("a","b"),("ab","")]
+```
+Não funciona porque consome uma string com espaços e devolve as palavras concatenadas sem os espaços, porque o operador ``` satisfy' ``` consome espaços no fim. Se antes usarmos o ``` satisfy ``` sem a plica temos que:
 
-Mas se usar o satisfy sem a plica temos que:
-> palavras "a b" = [("","a b"),("a"," b")]
+```
+palavras "a b" = [("","a b"),("a"," b")]
+```
 
-neste caso fico com um espaço no início da linha o parsing não termina.
+neste caso consome uma palavra mas o resto da string tem espaços no início linha logo o próximo parser terá que conseguir consumi-los.
 
-Por isso é útil consumir espaços não só fim com o no início. Surge a necessidade de criar novos combinadores:
+Por isso é útil consumir espaços não só fim como o no início. Surge a necessidade de criar novos combinadores:
 
 ```
 symbol''   a = (\_ k _ -> k) <$$> spaces <**> symbol   a <**> spaces
@@ -57,7 +83,7 @@ satisfy''  a = (\_ k _ -> k) <$$> spaces <**> satisfy  a <**> spaces
 A ambiguidade de espaços surge porque estamos a consumir espaços tanto no início quanto no fim do parsing. Isto é necessário para cobrir casos como "if   (     a ==    0 ) then    {" ou mesmo "int  i    =    0  ;", onde há muitos espaços ao redor de um padrão. Ao usar estes combinadores ocorrem alguns problemas. Quando um tenta consumir espaços no final do parsing, mas o parser seguinte também consome espaços no início. Isso gera situações ambíguas quando há espaços extras. Por exemplo, se colocarmos um espaço nessa situação surgem 2 situações possíveis; se colocarmos 2 espaços, isso gera 4 combinações, resultando num comportamento exponencial.
 
 
-Tentamos usar com cuidado estes combinadores para evitar consumir espaços no mesmo síteo quando há dois parsers seguidos. Mesmo assim quando chamamos tentamos dar parsing a uma função fatorial temos 65 ambiguidades das quais 24 o parsing correu bem e são árvores de sintaxe corretas. Outra forma que usamos para tentar diminuir o impacto é pegar na primeira ocorrencia correta do parsing, tentamos que ele seja lazy e pare logo quando encontrar uma válida.
+Tentamos usar com cuidado estes combinadores para evitar consumir espaços no mesmo síteo quando há dois parsers seguidos. Mesmo assim quando chamamos tentamos dar parsing a uma função fatorial temos 24 ambiguidades onde o parsing correu bem e são árvores de sintaxe corretas. Para diminuir o impacto tentamos pegar na primeira ocorrencia correta do parsing, para que ele seja lazy e pare logo quando encontrar uma válida.
 
 ### Distribuições
 Usamos um módulo com o monad das distribuições que é fornecido na cadeira de cálculo de programas.
@@ -71,7 +97,6 @@ Existem 2 notações para distribuições que o nosso parser aceita:
     Constrói uma distribuição uniform com os elementos entre 1 e 100, como se tivessemos a lista [1..100]
 
 
-Operações possíveis , resto da divisão, divisão inteira
 
 
 
@@ -112,13 +137,15 @@ Por isso, criamos um tipo Out que representa o nosso output no PicoC que é um t
     * Bool
 
 Implementamos um trimfmap para que fosse possível aplicar funções sobre Out e também implementar polimorfismo sobre algumas funções básicas. Quando na árvore de parsing há diferentes valores posso aplicamos funções diferentes. O comportamento polimorfico da nossa função de avaliação é o seguinte:
-> Neg 4 = -4
-> Neg False = True
-> "asd" + "ola" = "asd" ++ "ola"
-> True  + False = True || False
->  3    + 8     = 3 + 8
->  3    * 8     = 3 * 8
-> True  * True  = True && True
+```
+Neg 4 = -4
+Neg False = True
+"asd" + "ola" = "asd" ++ "ola"
+True  + False = True || False
+ 3    + 8     = 3 + 8
+ 3    * 8     = 3 * 8
+True  * True  = True && True
+```
 
 Por quando não há defenido uma função para um tipo, por exemplo a multiplicação de Strings usamos uma função
 "identidade" de aridade 2, que na prática é uma função constante e retorna só o segundo elemento.
@@ -150,9 +177,10 @@ Achamos que era boa ideia retirar-mos muitas das otimizações sugeridas, como p
 > Mult a 1 = a
 > Add a b = a + b
 
-Se temos os elementos neutros e absorventes da adição e a sua soma também teriamos que ter para os outros tipos implementados: String e Bool. O nosso código tornar-se-ia muito repetitivo. Também, estas "melhorias" parecem que não passam de uma função de avaliação para casos simples, decidimos que estas otimizações são demasiados destrutivas da árvore de parsing e por isso devem ser retiradas.
+Se o nosso programa fosse ser compilado em vez de interpretado, talvez fize-se sentido avaliar constantes sempre que elas aparecessem na
+árvose de sintaxe. Como vai ser interpretado estas otimizações não passam de uma função de avaliação para casos simples, decidimos que estas otimizações são demasiados destrutivas da árvore de parsing e por isso devem ser retiradas. 
 
-
+Se temos os elementos neutros e absorventes da adição e a sua soma também teriamos que ter para os outros tipos implementados: String e Bool. O nosso código tornar-se-ia muito repetitivo. 
 
 
 ## Exemplo de Execução
