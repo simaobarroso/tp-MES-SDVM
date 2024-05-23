@@ -28,13 +28,13 @@ A linguagem é definida por meio de uma estrutura de dados em Haskell. A seguir,
 
 - **Output Polimórfico**: Define um tipo `Out` que representa a saída da linguagem, permitindo valores de tipo `String`, `Integer` e `Bool`. Isso possibilita uma saída flexível e adaptável às necessidades do programa.
 
+- **Intrução Print**: Introduz a capacidade de imprimir coisas no ecra.
 - **Polimorfismo**: Implementa funções polimórficas básicas, como adição e multiplicação, para lidar com diferentes tipos de entrada de forma coerente.
 
 ### Exp Expressões 
+Tipicamente a negação lógica tem baixa prioridade mas como esta negação é polimórfica também é numérica por isso atribuímos muita prioridade.
 
-Tipicamente a negação lógica tem baixa prioridade mas como esta negação é polimórfica também é numérica por isso atribuímos muita
-prioridade.
-
+FIXME FALAR DE CENAS
 Nível de prioridade mais baixo:
 * Igualdade - "=="
 * Maior - ">"
@@ -114,8 +114,7 @@ PROPRIEDADE DE UNPARSING não dá para dists... teria que mudar a implementaçã
 ## Implementação do Gerador
 Os geradores foram implementados utilizando o monad de estado para manter o nome das variáveis disponíveis durante a geração de expressões.
 O gerador de expressões inteiros `gei` e de caracteres `ges` constroem recursivamente expressões compostas de constantes e operadores aritméticos, não inclui de boleanos porque se numa expressão númerica colcar um < menor, a expressão já não é do domínio dos inteiros mas dos boleanos. O gerador de expressões booleanas `geb` segue uma abordagem similar, mas inclui operadores booleanos. 
-O gerador de atribuição `genAtrib` utiliza o estado de variáveis disponíveis com nomes gerados aleatoriamente e tipos definidos de forma arbitrária. Também gera uma expressão do tipo que sorteou. 
-Essa abordagem permite a criação de programas variados e complexos para testar propriedades específicas usando o QuickCheck.
+O gerador de atribuição `genAtrib` atualiza o estado de variáveis disponíveis com nomes gerados aleatoriamente e tipos definidos de forma arbitrária. Também gera uma expressão do tipo que sorteou. Na geração de expressoes inteira é possível também gerar distribuições neste momento está limitada a gerar distribuições normais ou uniformes
 
 Também foi implementada uma função shrink para o PicoC.
 
@@ -131,7 +130,7 @@ Foram feitos 2 interpretadores para auxiliar a instrumentação de programas
 ## Exemplos de Polimorfismo
 
 
-A primeira tentativa foi usar o tipo Either mas não é adequado devido à sua limitação em aplicar funções diretamente a valores encapsulados, Como Either é um funtor não é possivel aplicar funções a ambos Left e Right, seria um bifuntor se fosse possível.
+A primeira tentativa de criat um tipo output foi usar o tipo Either mas não é adequado devido à sua limitação em aplicar funções diretamente a valores encapsulados. Como Either é um funtor não é possivel aplicar funções a ambos Left e Right, seria um bifuntor se fosse possível.
 ```
 ghci> fmap (+3) (Left 4)
 Left 4
@@ -145,6 +144,7 @@ Por isso, criamos um tipo Out que representa o nosso output no PicoC que é um t
     * Bool
 
 Implementamos um trimfmap para que fosse possível aplicar funções sobre Out e também implementar polimorfismo sobre algumas funções básicas. Quando na árvore de parsing há diferentes valores posso aplicamos funções diferentes. O comportamento polimorfico da nossa função de avaliação é o seguinte:
+
 ```
 Neg 4 = -4
 Neg False = True
@@ -155,13 +155,19 @@ True  + False = True || False
 True  * True  = True && True
 ```
 
-Por quando não há defenido uma função para um tipo, por exemplo a multiplicação de Strings usamos uma função
-"identidade" de aridade 2, que na prática é uma função constante e retorna só o segundo elemento.
+Quando não há defenido uma função para um tipo, por exemplo a multiplicação de Strings usamos uma função
+"identidade" de aridade 2, que na prática é uma função constante e retorna só o segundo elemento. Isso significa que
+frases como ' "ola" % "tudobem?" ' são frases válidas na linguagem, neste caso iria ser avaliado para "tudobem?".
 
-## Tranformações , mutações essas cenas
-FIXME
+## Transformações
 
-## Code Smeels
+### Mutações 
+A função que usamos para mutar um PicoC injeta apena 1 mutação de 1 dos tipos possíveis:
+* mutações nas intruções 
+* mutações nas expressões
+FIXME 
+
+### Otimizações e Code Smeels
 Quando temos comentários ou casos de while (False) ou um if (False) retornamos um tipo Idle que representa uma ação nula. Que serão removidos todos os idle da nossa árvore.
 
     Simplificamos a comparação de igualdade de boleanos 

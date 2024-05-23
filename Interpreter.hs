@@ -55,6 +55,7 @@ eval (Neg     a  ) c = trimap  id   not  negate <$> eval a c
 eval (RDiv    a b) c = trimap2 id2  id2  mod    <$> eval a c <*> eval b c
 eval (Div     a b) c = trimap2 id2  id2  div    <$> eval a c <*> eval b c
 eval (Add     a b) c = trimap2 (++) (||) (+)    <$> eval a c <*> eval b c
+eval (Sub     a b) c = trimap2 (\\) (||) (-)    <$> eval a c <*> eval b c
 eval (Mult    a b) c = trimap2 id2  (&&) (*)    <$> eval a c <*> eval b c
 eval (Smaller a b) c = comp2   (<)  (<)  (<)    <$> eval a c <*> eval b c
 eval (Bigger  a b) c = comp2   (>)  (>)  (>)    <$> eval a c <*> eval b c

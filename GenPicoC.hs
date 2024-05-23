@@ -10,6 +10,7 @@ import Test.QuickCheck.Function
 import Data.List
 import Data.Char
 
+import Library.Probability
 import Parser
 import Picoc
 import Types
@@ -37,31 +38,46 @@ instance Arbitrary Inst where
 
 -------------------------------------------------------------------------------
 
+-- Gerador de Distribuições
+genList = flip vectorOf arbitrary 
+
+genDist n = do
+    tipo <- elements ["uniform","normal"]
+    case tipo of
+        "uniform" -> D2 . uniform <$> genList n
+        "normal"  -> D2 . normal  <$> genList n
+
+-------------------------------------------------------------------------------
+
 sta     = suchThat arbitrary 
 
 alpha   = listOf $ sta myisAlphaNum
 
 genNome = (:) <$> (sta primeiraletra) <*> (take 4 <$> alpha)
 
+commom e1 e2 v = var ++ [ (1, return $ Neg  e1     ),
+                          (1, return $ Add  e1 e2  ),
+                          (1, return $ Sub  e1 e2  ),
+                          (1, return $ Mult e1 e2  ),
+                          (1, return $ RDiv e1 e2  ),
+                          (1, return $ Div  e1 e2  ),
+                          (1, return $ Mult e1 e2  )]
 
-commom e1 e2 v = [ (3, Fetch  <$> elements v),
-                   (1, return $ Neg  e1     ),
-                   (1, return $ Add  e1 e2  ),
-                   (1, return $ Sub  e1 e2  ),
-                   (1, return $ Mult e1 e2  )]
+    where var = if not (null v) then [(3, Fetch  <$> elements v)] else []
 
 commom_b e1 e2 = [ (1, return $ Bigger  e1 e2),
                    (1, return $ Smaller e1 e2),
                    (1, return $ Equal   e1 e2) ]
 
 
+
 -- Generator of INT Expressions 
-gei 0 =  lift $ Const <$> arbitrary
+gei 0 =  lift $ frequency [ (2,Const <$> arbitrary), (1,genDist 6) ]
 gei n = do
     e1 <- gei (n-1)
     e2 <- gei (n-1)
     get >>= \v -> do
-        r  <- lift $ frequency  $ (4, Const <$> arbitrary ) : commom e1 e2 v  
+        r  <- lift $ frequency  $ (4, Const <$> arbitrary ) : (1,genDist (n+6)) : commom e1 e2 v  
         return r
 
 -- Generator of STRING Expressions 
