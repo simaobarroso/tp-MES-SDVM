@@ -13,10 +13,13 @@ Este relatório descreve uma linguagem de programação e sua implementação de
 A linguagem é definida por meio de uma estrutura de dados em Haskell. A seguir, estão os principais componentes da linguagem:
 
 ### Tipos de Dados
+- `PicoC`: Representa a nossa linguagem completa, é o nosso construtor root da linguagem
 
 - `Exp`: Representa expressões na linguagem, incluindo constantes, operações aritméticas, operações lógicas e operações de comparação.
 
 - `Inst`: Define instruções executáveis, como estruturas condicionais (`IfElse`), loops (`While`), atribuição de valores (`Atrib`) e pausa (`Wait`).
+
+- `Out` : Denine o nosso tipo de valores permitidos na linguagem. 
 
 ### Características da Linguagem
 
@@ -26,7 +29,7 @@ A linguagem é definida por meio de uma estrutura de dados em Haskell. A seguir,
 
 - **Instrução Wait**: O construtor `Wait` permite esperar a execução do programa por um número especificado de segundos, utilizando a função `threadDelay :: Int -> IO ()`.
 
-- **Output Polimórfico**: Define um tipo `Out` que representa a saída da linguagem, permitindo valores de tipo `String`, `Integer` e `Bool`. Isso possibilita uma saída flexível e adaptável às necessidades do programa.
+- **Output Polimórfico**: Define um tipo `Out` que representa um valor da linguagem, permitindo valores de tipo `String`, `Integer` e `Bool`. Isso possibilita uma saída flexível e adaptável às necessidades do programa.
 
 - **Intrução Print**: Introduz a capacidade de imprimir coisas no ecra.
 - **Polimorfismo**: Implementa funções polimórficas básicas, como adição e multiplicação, para lidar com diferentes tipos de entrada de forma coerente.
@@ -106,10 +109,6 @@ Existem 2 notações para distribuições que o nosso parser aceita:
 
 
 
-
-
-#FIXME
-PROPRIEDADE DE UNPARSING não dá para dists... teria que mudar a implementação do show
 
 ## Implementação do Gerador
 Os geradores foram implementados utilizando o monad de estado para manter o nome das variáveis disponíveis durante a geração de expressões.
@@ -198,6 +197,45 @@ Se o nosso programa fosse ser compilado em vez de interpretado, talvez fize-se s
 
 Se temos os elementos neutros e absorventes da adição e a sua soma também teriamos que ter para os outros tipos implementados: String e Bool. O nosso código tornar-se-ia muito repetitivo. 
 
+## Propriedades da linguagem
+
+Defenimos `pu` que é a abreviação de fazer unparsing e depois parsing.
+```
+pu = parser . unparse
+```
+
+Defenimos o operador `~`, que compara 2 PicoC semanticamente, corresponde a correr os dois e ver se o seu output é o
+mesmo.
+```
+(~) :: PicoC -> PicoC -> IO Bool
+(Pico p) ~ (Pico q) = liftM2 (==) (run p []) (run q [])
+```
+
+
+A **propriedade 1** compara as árvores, testa se quando fazemos unparse e parse obtemos uma equivalente árvore sintaxe abstrata.
+```
+propriedade1 pico = pico == pu pico
+```
+
+
+A **propriedade 2** compara a semântica da linguagem. Testa se quando fazemos unparse e parse de uma linguagem mesmo que diferentes, obtemos uma memória equivalente.
+```
+propriedade2 pico = pico ~ pu pico
+```
+
+Também temos uma terceira propriedade que combina as útimas 2, que testa se 2 PicoC são iguais semanticamente e se a arvore sintaxe abstrata são iguais.
+
+
+As nossas propriedades funcionam sempre exceto quando usamos o monad das distribuições.
+A razão de isso acontecer é que na semantica implementada sempre que uma variável pertence a uma distribuição esta
+fica com um valor aleatório cumprindo a distribuição. Quando se compara o resultado de programas com valores aleatórios quase sempre dão diferentes e por isso não passa na propriedade.
+
+Também não passa na propriedade que compara as árvores abstratas depois do uparsing e parsing. O problema está na
+instancia Show das distribuições. Para cumprir a propriedade teríamos que alterar o Show das distribuições para que
+fosse possível o parsing pelo nosso parser de PicoC.
+
+Testes das propriedades com alguns exemplos:
+FIXME falta colocar
 
 ## Exemplo de Execução
 
@@ -219,7 +257,6 @@ O programa dados é um programa que resulta em multiplicar 2 valores da distribu
 ```
 ghci> run dados []
 [("z",R 10),("y",R 5),("x",R 2)]
-ghci>
 ghci> run dados []
 [("z",R 80),("y",R 8),("x",R 10)]
 ghci> run dados []
