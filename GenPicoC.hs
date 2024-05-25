@@ -12,7 +12,6 @@ import Data.Char
 
 import Library.Probability
 import Parser
-import Picoc
 import Types
 
 type Gerador st a = StateT st Gen a

@@ -5,6 +5,8 @@ import ExemplosPico
 import Types
 import Interpreter
 import Transformacoes
+import GenPicoC
+
 -- import Data.Generics.Aliases
 import Library.Probability
 

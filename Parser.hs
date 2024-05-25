@@ -163,12 +163,12 @@ davalor   =  f <$$> var <**> optional' ( j <$$> symbol'' '=' <**> exp2 )
             f n exp = Atrib n "" (head exp)
             j a b = b
 
-atrib2 =  f <$$> mytype <**> davalor <**> symbol' ';'
+atrib =  f <$$> mytype <**> davalor <**> symbol' ';'
       <|> g <$$>             davalor <**> symbol' ';'
     where f t (Atrib n _ e) _ = Atrib n t e
           g a _  = a
 
---atrib2  = f <$$> optional'' mytype <**> var <**> optional' ( j <$$> symbol'' '=' <**> exp2 ) <**> symbol' ';'
+--atrib  = f <$$> optional'' mytype <**> var <**> optional' ( j <$$> symbol'' '=' <**> exp2 ) <**> symbol' ';'
 --    where f t n [] _  = Atrib n (sh t) Empty
 --          f t n exp _ = Atrib n (sh t) (head exp)
 --          j a b = b
@@ -225,7 +225,7 @@ myprint = f <$$> token' "print"
 
 
 -- ordem imperativa
-ordem  =  atrib2 
+ordem  =  atrib 
       <|> while2
       <|> ifElse2
       <|> comment

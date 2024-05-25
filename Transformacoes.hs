@@ -14,9 +14,9 @@ import Control.Monad
 import System.Random
 
 import Interpreter
-import Parser
+--import Parser
 import Types
-import ExemplosPico
+--import ExemplosPico
 --import GenPicoC
 
 instance StrategicData Int

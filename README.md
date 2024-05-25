@@ -34,31 +34,28 @@ A linguagem é definida por meio de uma estrutura de dados em Haskell. A seguir,
 - **Intrução Print**: Introduz a capacidade de imprimir coisas no ecra.
 - **Polimorfismo**: Implementa funções polimórficas básicas, como adição e multiplicação, para lidar com diferentes tipos de entrada de forma coerente.
 
-### Exp Expressões 
-Tipicamente a negação lógica tem baixa prioridade mas como esta negação é polimórfica também é numérica por isso atribuímos muita prioridade.
-
-FIXME FALAR DE CENAS
-Nível de prioridade mais baixo:
-* Igualdade - "=="
-* Maior - ">"
-* Menor - "<"
-
-Nível 2 de prioridade:
-* Soma - "+"
-* Subtração - "-"
-
-Nível 3 de prioridade:
-* Divisão inteira - "/"
-* Resto da divisão - "%"
-* Multiplicação - "\*"
-* Negação - "~"
-
-Nível com mais prioridade:
-* Parentesis - "(" e ")"
-
-
-
 ## Implementação do Parser
+### Gramática da linguagem
+
+```
+Linhas -> Ordem+
+
+Ordem  -> Atribuicao
+        | While
+        | IfElse 
+        | Comentario
+        | Print
+        
+Atribuicao ->
+
+Expressao
+
+Print -> 'print' '(' Expressao ')'
+
+Comentario -> '//' .* '//'
+
+```
+
 
 No parser em vez de usarmos o combinador \<\$\> e o \<\*\> usamos um igual mas com outro nome, o \<\$\$\> e o \<\*\*\> para evitar
 conflitos e não se confundir com o map sobre funtores e o map sobre funtores aplicativos.
@@ -96,24 +93,49 @@ A ambiguidade de espaços surge porque estamos a consumir espaços tanto no iní
 
 Tentamos usar com cuidado estes combinadores para evitar consumir espaços no mesmo síteo quando há dois parsers seguidos. Mesmo assim quando chamamos tentamos dar parsing a uma função fatorial temos 24 ambiguidades onde o parsing correu bem e são árvores de sintaxe corretas. Para diminuir o impacto tentamos pegar na primeira ocorrencia correta do parsing, para que ele seja lazy e pare logo quando encontrar uma válida.
 
+### Exp Expressões 
+Tipicamente a negação lógica tem baixa prioridade mas como esta negação é polimórfica também é numérica por isso atribuímos muita prioridade.
+
+FIXME FALAR DE CENAS
+Nível de prioridade mais baixo:
+* Igualdade - "=="
+* Maior - ">"
+* Menor - "<"
+
+Nível 2 de prioridade:
+* Soma - "+"
+* Subtração - "-"
+
+Nível 3 de prioridade:
+* Divisão inteira - "/"
+* Resto da divisão - "%"
+* Multiplicação - "\*"
+* Negação - "~"
+
+Nível com mais prioridade:
+* Parentesis - "(" e ")"
+
+
 ### Distribuições
 Usamos um módulo com o monad das distribuições que é fornecido na cadeira de cálculo de programas.
 
 Existem 2 notações para distribuições que o nosso parser aceita:
 
     "int i = D (normal ,[1,100,80,30])"
-    Constrói uma distribuição normal com elementos que sejam colocados numa lista
+Constrói uma distribuição normal com elementos que sejam colocados numa lista
 
     "int i = D (uniform,1,100)"
-    Constrói uma distribuição uniform com os elementos entre 1 e 100, como se tivessemos a lista [1..100]
+Constrói uma distribuição uniform com os elementos entre 1 e 100, como se tivessemos a lista [1..100]
 
-
-
+Na semantica implementada, quando uma variável pertence a uma distribuição esta fica com um valor aleatório cumprindo a distribuição. Pode ser útil se quisermos simular o lançamento de dados.
 
 ## Implementação do Gerador
-Os geradores foram implementados utilizando o monad de estado para manter o nome das variáveis disponíveis durante a geração de expressões.
-O gerador de expressões inteiros `gei` e de caracteres `ges` constroem recursivamente expressões compostas de constantes e operadores aritméticos, não inclui de boleanos porque se numa expressão númerica colcar um < menor, a expressão já não é do domínio dos inteiros mas dos boleanos. O gerador de expressões booleanas `geb` segue uma abordagem similar, mas inclui operadores booleanos. 
-O gerador de atribuição `genAtrib` atualiza o estado de variáveis disponíveis com nomes gerados aleatoriamente e tipos definidos de forma arbitrária. Também gera uma expressão do tipo que sorteou. Na geração de expressoes inteira é possível também gerar distribuições neste momento está limitada a gerar distribuições normais ou uniformes
+
+Os geradores foram implementados utilizando o monad de estado para manter o nome das variáveis disponíveis durante a geração de expressões. A ideia é se utilizar variáveis só utilizar as que já tenham sido atribuidas.
+
+O gerador de expressões inteiros `gei` e de caracteres `ges` constroem recursivamente expressões compostas de constantes e operadores aritméticos, não inclui de boleanos porque se numa expressão númerica colcar um < menor, a expressão já não é do domínio dos inteiros mas dos boleanos. O gerador de expressões booleanas `geb` segue uma abordagem similar, mas inclui operadores booleanos. Na geração de expressoes inteira é possível também gerar distribuições neste momento está limitada a gerar distribuições normais ou uniformes
+
+O gerador de atribuição `genAtrib` atualiza o estado de variáveis disponíveis com nomes gerados aleatoriamente e tipos definidos de forma arbitrária. Também gera uma expressão do tipo que sorteou. 
 
 Também foi implementada uma função shrink para o PicoC.
 
@@ -227,8 +249,7 @@ Também temos uma terceira propriedade que combina as útimas 2, que testa se 2 
 
 
 As nossas propriedades funcionam sempre exceto quando usamos o monad das distribuições.
-A razão de isso acontecer é que na semantica implementada sempre que uma variável pertence a uma distribuição esta
-fica com um valor aleatório cumprindo a distribuição. Quando se compara o resultado de programas com valores aleatórios quase sempre dão diferentes e por isso não passa na propriedade.
+A razão de isso acontecer é que quando se compara o resultado de programas com valores aleatórios quase sempre dão diferentes e por isso não passa na propriedade.
 
 Também não passa na propriedade que compara as árvores abstratas depois do uparsing e parsing. O problema está na
 instancia Show das distribuições. Para cumprir a propriedade teríamos que alterar o Show das distribuições para que
@@ -236,6 +257,10 @@ fosse possível o parsing pelo nosso parser de PicoC.
 
 Testes das propriedades com alguns exemplos:
 FIXME falta colocar
+
+## Funções de teste
+FIXME
+
 
 ## Exemplo de Execução
 
