@@ -43,6 +43,7 @@ data Exp = D2 (Dist Int)
          | Bigger  Exp Exp
          | Smaller Exp Exp
          | Equal   Exp Exp
+         | Or      Exp Exp
          deriving (Data,Eq)
          
 data Out l m r = L l | M m | R r
@@ -80,6 +81,7 @@ instance Show Inst where
     show ( Idle )           = "" 
     show ( Comment a )      = "//"  ++ a ++ "//\n" 
     show ( Print e   )      = "print("++show e++")\n"
+    show ( Wait  e   )      = "wait("++show e++")\n"
 
 instance Show Exp where
     show (Char   a )    = show a 
@@ -96,6 +98,7 @@ instance Show Exp where
     show (Smaller e e2) = show e ++ "<"  ++ show e2 
     show (Bigger  e e2) = show e ++ ">"  ++ show e2 
     show (Equal   e e2) = show e ++ "==" ++ show e2 
+    show (Or      e e2) = show e ++ "||" ++ show e2 
     show (Neg     e   ) = "~( " ++ show e ++ " )"
 
 showOut (L s ) = s

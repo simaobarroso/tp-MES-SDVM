@@ -36,6 +36,7 @@ A linguagem é definida por meio de uma estrutura de dados em Haskell. A seguir,
 
 ## Implementação do Parser
 ### Gramática da linguagem
+Esta defenição é informal, usamos FIXME colcoar na notação Backus–Naur form
 
 ```
 Linhas -> Ordem+
@@ -46,14 +47,42 @@ Ordem  -> Atribuicao
         | Comentario
         | Print
         
-Atribuicao ->
+IfElse -> 'if' '(' Expressao ')' 'then' '{' Linhas '}' ('else' '{' Linhas '}')?
 
-Expressao
+While -> 'while' '(' Expressao ')' '{' Linhas '}' 
+
+Atribuicao -> Tipo? Davalor ';'
+
+Davalor -> pal ( '=' Expressao )?
+
+Tipo -> 'char' | 'int' | 'bool'
 
 Print -> 'print' '(' Expressao ')'
 
 Comentario -> '//' .* '//'
 
+Expressao -> Exp1 '>'  Expressao 
+           | Exp1 '<'  Expressao 
+           | Exp1 '==' Expressao 
+                   ||
+Epx1 -> Exp2  '+' Expressao
+      | Exp2  '-' Expressao
+Epx2 -> Fator '%' Expressao  
+      | Fator '*' Expressao 
+      | Fator '/' Expressao 
+Fator -> Valor
+       | '(' Expressao ')'
+
+Valor -> Distribuicao
+       | int 
+       | string
+       | bool
+       | var
+
+Distribuicao -> 'D' '(' pal ',' int ',' int ')'
+              | 'D' '(' pal ',' Lista ')'
+
+Lista ->  '[' separatedBy (int  ',')']'
 ```
 
 
@@ -99,6 +128,7 @@ Tipicamente a negação lógica tem baixa prioridade mas como esta negação é 
 FIXME FALAR DE CENAS
 Nível de prioridade mais baixo:
 * Igualdade - "=="
+* Or - "||"
 * Maior - ">"
 * Menor - "<"
 

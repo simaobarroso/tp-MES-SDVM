@@ -57,6 +57,7 @@ eval (Div     a b) c = trimap2 id2  id2  div    <$> eval a c <*> eval b c
 eval (Add     a b) c = trimap2 (++) (||) (+)    <$> eval a c <*> eval b c
 eval (Sub     a b) c = trimap2 (\\) (||) (-)    <$> eval a c <*> eval b c
 eval (Mult    a b) c = trimap2 id2  (&&) (*)    <$> eval a c <*> eval b c
+eval (Or      a b) c = trimap2 id2  (||) max    <$> eval a c <*> eval b c
 eval (Smaller a b) c = comp2   (<)  (<)  (<)    <$> eval a c <*> eval b c
 eval (Bigger  a b) c = comp2   (>)  (>)  (>)    <$> eval a c <*> eval b c
 eval (Equal   a b) c = comp2   (==) (==) (==)   <$> eval a c <*> eval b c

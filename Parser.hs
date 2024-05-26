@@ -105,6 +105,8 @@ myisAlphaNum  = flip elem $ '_':['a'..'z']++['A'..'Z']++['0'..'9']
 
 pList :: Parser [Int]
 pList = enclosedBy (symbol' '[') (separatedBy pInt2 (symbol ',')) (symbol' ']')
+     <|>  f <$$> symbol' '[' <**> symbol' ']'
+    where f _ _ = []
 
 pInt2 :: Parser Int   
 pInt2 = f <$$> pSinal2 <**> pDigitos
@@ -144,10 +146,13 @@ valor =   Const <$$> pInt2
 
 dist = f <$$> symbol' 'D' <**> symbol' '(' 
                    <**> var   <**> symbol'' ','  
+
                    <**> pInt2 <**> symbol'' ','
                    <**> pInt2 <**> (symbol'' ')') 
     <|> g <$$> symbol' 'D' <**> symbol' '(' 
-                   <**> var <**> symbol'' ',' <**> pList <**> (symbol'' ')') 
+
+                   <**> var <**> symbol'' ',' 
+                   <**> pList <**> (symbol'' ')') 
     where 
        f _ _ "uniform" _ a _ b _ = D2 (uniform [a..b])
        f _ _ _ _ a _ b _         = D2 (normal [a..b])
@@ -223,6 +228,9 @@ myprint = f <$$> token' "print"
             <**> enclosedBy (symbol' '(') exp2  (symbol'' ')') 
     where f _ e  = Print e
 
+wait =   f <$$> token' "wait" 
+            <**> enclosedBy (symbol' '(') pInt2 (symbol'' ')') 
+    where f _ e  = Wait e
 
 -- ordem imperativa
 ordem  =  atrib 
@@ -230,16 +238,19 @@ ordem  =  atrib
       <|> ifElse2
       <|> comment
       <|> myprint
+      <|> wait
 
 linhas' = oneOrMore ordem
 
 exp2 =  f <$$> exp1 <**> symbol'' '>' <**> exp2 
     <|> g <$$> exp1 <**> symbol'' '<' <**> exp2
     <|> h <$$> exp1 <**> token'' "==" <**> exp2
+    <|> i <$$> exp1 <**> token'' "||" <**> exp2
     <|>        exp1
     where f e _ e2 = Bigger  e e2
           g e _ e2 = Smaller e e2
           h e _ e2 = Equal e e2
+          i e _ e2 = Or e e2
 
 exp1 = f <$$> exp0 <**> symbol'' '+' <**> exp1
    <|> g <$$> exp0 <**> symbol'' '-' <**> exp1

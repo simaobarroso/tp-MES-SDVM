@@ -74,7 +74,7 @@ mutExp _              = Nothing
 mutInst ( IfElse e b b2) = Just $ IfElse e b2 b
 mutInst (Comment s     ) = Just $ Comment $ s ++ "αβλγ⚠ç!Ç!Ç!Ç!"
 mutInst (Wait    n     ) = Just $ Wait $ succ n
-mutInst (Print   e     )  = Just  $ Print $ fj $ mutExp e
+mutInst (Print   e     ) = Just $ Print $ fj $ mutExp e
 mutInst (If      e b   ) = Just $ IfElse e b []
 mutInst (While   e b   ) = Just $ While (Neg e) b 
 

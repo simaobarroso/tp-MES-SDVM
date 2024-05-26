@@ -9,6 +9,10 @@ import Library.Probability
 -- EXEMPLOS DEBUGGING
 -------------------------------------------------------------------------------
 
+--programaPrimos = "print(2) print(3) int i = 5; int aux; while (True) {aux = 0;while (aux < i /2) { if ( i  % 2 == 0) then {i = i+1; }else {aux = aux +1; } if (aux == i/2 -1) then { print ( i) }  } }"
+
+primos = "print( \"primo: \") print(2) print(\"\n\") int i = 3; while (True){ int aux = 2; while ((~(aux>i)) * ~(i%aux==0)){aux=aux+1;}if(aux==i) then{ wait (1) print( \"primo: \") print(i) print(\"\n\") } else { print(\"Não é primo: \") print(i) print(\"\n\") } i = i+1; }"
+
 programa3M_Final = "int dado1 = D (normal,[2,3,9,10]); if (((dado2 + dado1) % 2) == 0 ) then { return = \"par\";} else {return = \"impar\";}"
 
 -- a soma de dois números par é par

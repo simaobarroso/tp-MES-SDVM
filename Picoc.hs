@@ -10,13 +10,15 @@ import GenPicoC
 -- import Data.Generics.Aliases
 import Library.Probability
 
+import Test.QuickCheck 
+import Test.QuickCheck.Function 
+
+
 import Control.Monad
 infixl 3 ...
 -------------------------------------------------------------------------------
 -- TAREFAS DOS ENUNCIADO FINAL
 -------------------------------------------------------------------------------
-
-
 -------------------------------------------------------------------------------
 -- Equivalence properties, parser . unparser
 -------------------------------------------------------------------------------
@@ -65,11 +67,12 @@ runTest (Pico p) (i,r) = liftM2 (==) (return r) (getReturn <$> run p i )
 runTestSuite :: PicoC -> [(Context, Out String Bool Int)] -> IO Bool
 runTestSuite = allM . sequence ... map . runTest 
  
+allM  = liftM $ all id
+
 -- blackbird combinator (.: no Data.Composition) 
 -- https://blog.lahteenmaki.net/combinator-birds.html
 (...) = (.).(.)
 
-allM  = liftM $ all id
 
 
 -- tarefa 4 
