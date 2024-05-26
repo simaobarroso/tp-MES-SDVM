@@ -11,15 +11,66 @@ Este relatório descreve uma linguagem de programação e sua implementação de
 ## Definição da Linguagem
 
 A linguagem é definida por meio de uma estrutura de dados em Haskell. A seguir, estão os principais componentes da linguagem:
+### Gramática da linguagem
+Defenição da nosa gramática na notação Backus–Naur. Omitimos algumas coisas como a gramática dos números inteiros inteiros strings  booleanos porque não adiciona nada de importante.
+a gente sabe 
 
-### Tipos de Dados
-- `PicoC`: Representa a nossa linguagem completa, é o nosso construtor root da linguagem
+```
+<Linhas>       ::= <Linhas> <Ordem>
+                 | <Ordem> 
 
-- `Exp`: Representa expressões na linguagem, incluindo constantes, operações aritméticas, operações lógicas e operações de comparação.
+<Ordem>        ::= <Atribuicao> | <While> | <If> | <Comentario> | <Print>
 
-- `Inst`: Define instruções executáveis, como estruturas condicionais (`IfElse`), loops (`While`), atribuição de valores (`Atrib`) e pausa (`Wait`).
+<If>           ::= "if" "(" <Expressao> ")" "then" "{" <Linhas> "}" <Else> 
 
-- `Out` : Denine o nosso tipo de valores permitidos na linguagem. 
+<Else>         ::= "else" "{" <Linhas> "}"
+                 | ""
+
+<While>        ::= "while" "(" <Expressao> ")" "{" <Linhas> "}"
+
+<Atribuicao>   ::= <Tipo> <Davalor> ";"
+                 |        <Davalor> ";"
+
+<Davalor>      ::= pal "=" <Expressao>
+                 | pal
+
+<Tipo>         ::= "char" | "int" | "bool"
+
+<Print>        ::= "print" "(" <Expressao> ")"
+
+
+<Expressao>    ::= <Exp1> ">"  <Expressao>
+                 | <Exp1> "<"  <Expressao>
+                 | <Exp1> "==" <Expressao>
+                 | <Exp1>
+               
+<Exp1>         ::= <Exp2>  ("+" | "-") <Expressao>
+                 | <Exp2>
+
+<Exp2>         ::= <Fator> ("%" | "*" | "/") <Expressao>
+                 | <Fator>
+
+<Fator>        ::= <Valor>
+                 | "(" <Expressao> ")"
+
+<Valor>        ::= <Distribuicao>
+                 | int
+                 | string
+                 | bool
+                 | var
+
+<Distribuicao> ::= "D" "(" pal "," int "," int ")"
+                 | "D" "(" pal "," <Lista> ")"
+
+<Lista>        ::= "[" <Cont> ]"
+                 | "[" "]"
+
+<Cont>         ::= int "," <Cont>
+                 | int
+
+<Comentario>   ::= "//" (.|\n)* "//"
+```
+-------------------------------------------------------------------------------
 
 ### Características da Linguagem
 
@@ -34,57 +85,20 @@ A linguagem é definida por meio de uma estrutura de dados em Haskell. A seguir,
 - **Intrução Print**: Introduz a capacidade de imprimir coisas no ecra.
 - **Polimorfismo**: Implementa funções polimórficas básicas, como adição e multiplicação, para lidar com diferentes tipos de entrada de forma coerente.
 
+## Estrutura do projeto
+![ficheiro](images/estrutura.png)
+
+### Tipos de Dados
+- `PicoC`: Representa a nossa linguagem completa, é o nosso construtor root da linguagem
+
+- `Exp`: Representa expressões na linguagem, incluindo constantes, operações aritméticas, operações lógicas e operações de comparação.
+
+- `Inst`: Define instruções executáveis, como estruturas condicionais (`IfElse`), loops (`While`), atribuição de valores (`Atrib`) e pausa (`Wait`).
+
+- `Out` : Denine o nosso tipo de valores permitidos na linguagem. 
+
+
 ## Implementação do Parser
-### Gramática da linguagem
-Esta defenição é informal, usamos FIXME colcoar na notação Backus–Naur form
-
-```
-Linhas -> Ordem+
-
-Ordem  -> Atribuicao
-        | While
-        | IfElse 
-        | Comentario
-        | Print
-        
-IfElse -> 'if' '(' Expressao ')' 'then' '{' Linhas '}' ('else' '{' Linhas '}')?
-
-While -> 'while' '(' Expressao ')' '{' Linhas '}' 
-
-Atribuicao -> Tipo? Davalor ';'
-
-Davalor -> pal ( '=' Expressao )?
-
-Tipo -> 'char' | 'int' | 'bool'
-
-Print -> 'print' '(' Expressao ')'
-
-Comentario -> '//' .* '//'
-
-Expressao -> Exp1 '>'  Expressao 
-           | Exp1 '<'  Expressao 
-           | Exp1 '==' Expressao 
-                   ||
-Epx1 -> Exp2  '+' Expressao
-      | Exp2  '-' Expressao
-Epx2 -> Fator '%' Expressao  
-      | Fator '*' Expressao 
-      | Fator '/' Expressao 
-Fator -> Valor
-       | '(' Expressao ')'
-
-Valor -> Distribuicao
-       | int 
-       | string
-       | bool
-       | var
-
-Distribuicao -> 'D' '(' pal ',' int ',' int ')'
-              | 'D' '(' pal ',' Lista ')'
-
-Lista ->  '[' separatedBy (int  ',')']'
-```
-
 
 No parser em vez de usarmos o combinador \<\$\> e o \<\*\> usamos um igual mas com outro nome, o \<\$\$\> e o \<\*\*\> para evitar
 conflitos e não se confundir com o map sobre funtores e o map sobre funtores aplicativos.
@@ -199,11 +213,15 @@ Implementamos um trimfmap para que fosse possível aplicar funções sobre Out e
 ```
 Neg 4 = -4
 Neg False = True
+1     - 1     =  1 - 1
+"asd" - "ola" =  "asd" \\ "ola" 
 "asd" + "ola" = "asd" ++ "ola"
 True  + False = True || False
+ 4   || 9     = max 4 9
  3    + 8     = 3 + 8
  3    * 8     = 3 * 8
 True  * True  = True && True
+
 ```
 
 Quando não há defenido uma função para um tipo, por exemplo a multiplicação de Strings usamos uma função
@@ -214,9 +232,34 @@ frases como ' "ola" % "tudobem?" ' são frases válidas na linguagem, neste caso
 
 ### Mutações 
 A função que usamos para mutar um PicoC injeta apena 1 mutação de 1 dos tipos possíveis:
-* mutações nas intruções 
-* mutações nas expressões
-FIXME 
+### Mutação de Expressões (`mutExp`):
+1. **Neg**: Negar uma expressão do tipo `a` transforma-a em sua negação dupla (`Neg (Neg a)`).
+2. **B**: Quando uma expressão do tipo `B a` é negada, torna-se `Neg (B a)`.
+3. **Const**: Incrementa o valor de uma expressão constante (`Const a`) em 1.
+4. **Char**: Adiciona um emoji de gato ao final de uma string.
+5. **D2**: Adiciona um número aleatório entre 1 e 10 a uma lista de valores.
+6. **RDiv**: Adiciona uma unidade ao resultado da divisão `e` por `e2`.
+7. **Div**: Troca os operandos de uma divisão.
+8. **Mult**: Mantém a expressão de multiplicação inalterada.
+9. **Sub**: Troca os operandos de uma subtração.
+10. **Add**: Troca os operandos de uma adição e adiciona a expressão original à expressão resultante.
+11. **Bigger**: Transforma uma comparação "maior que" em uma comparação "igual a".
+12. **Smaller**: Transforma uma comparação "menor que" em uma comparação "maior que".
+13. **Equal**: Negar uma expressão de igualdade transforma-a em sua negação.
+
+### Mutação de Instruções (`mutInst`):
+
+1. **IfElse**: Inverte as instruções em um bloco `if-else`.
+2. **Comment**: Adiciona uma sequência específica ao final de um comentário.
+3. **Wait**: Incrementa o valor do tempo de espera em 1.
+4. **Print**: Aplica uma mutação na expressão que será impressa.
+5. **If**: Transforma uma instrução `if` em um `if-else` vazio.
+6. **While**: Transforma um loop `while` em um `while` que executa quando a condição é falsa.
+
+Essas mutações podem ajudar a explorar diferentes comportamentos do programa e identificar possíveis vulnerabilidades ou otimizações.
+
+
+
 
 ### Otimizações e Code Smeels
 Quando temos comentários ou casos de while (False) ou um if (False) retornamos um tipo Idle que representa uma ação nula. Que serão removidos todos os idle da nossa árvore.

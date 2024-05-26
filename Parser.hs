@@ -112,11 +112,14 @@ pInt2 :: Parser Int
 pInt2 = f <$$> pSinal2 <**> pDigitos
     where f x y = read $ x:y
 
-pString = f <$$> symbol '\"' 
-            <**> zeroOrMore (satisfy (/='\"')) 
-            <**> symbol '\"'
+pString =  f <$$> symbol '\"' 
+             <**> zeroOrMore (satisfy (/='\"')) 
+             <**> symbol '\"'
+       <|> g <$$> symbol '\'' 
+             <**> zeroOrMore (satisfy (/='\"')) 
+             <**> symbol '\''
     where f a b c = b 
-
+          g a b c = b 
 
 pDigitos =  f <$$> satisfy isDigit
         <|> g <$$> satisfy isDigit <**> pDigitos
