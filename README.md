@@ -330,7 +330,7 @@ Também temos uma terceira propriedade que combina as útimas 2, que testa se 2 
 
 ### Casos onde as propriedades falham
 As propriedades nem sempre funcionam, quando temos \n, \t, ou \, um carater de proteção como o \ dentro de uma string.
-Por exemplo um \n, quando fazemos unparsing e parsing torna-se num \\n. Descobrir como resolver este problema é
+Por exemplo um \n, quando fazemos unparsing e parsing torna-se num \\\n. Descobrir como resolver este problema é
 complicado até porque o próprio Haskell converte os carateres \ e n em \n e vise-versa em vários casos.
 
 Também não funcionam quando usamos o monad das distribuições.
