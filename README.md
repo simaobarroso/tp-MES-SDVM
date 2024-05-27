@@ -329,7 +329,7 @@ propriedade2 pico = pico ~ pu pico
 Também temos uma terceira propriedade que combina as útimas 2, que testa se 2 PicoC são iguais semanticamente e se a arvore sintaxe abstrata são iguais.
 
 ### Casos onde as propriedades falham
-As propriedades nem sempre funcionam, quando temos \n ou \t ou um carater de proteção como o \ dentro de uma string.
+As propriedades nem sempre funcionam, quando temos \n, \t, ou \, um carater de proteção como o \ dentro de uma string.
 Por exemplo um \n, quando fazemos unparsing e parsing torna-se num \\n. Descobrir como resolver este problema é
 complicado até porque o próprio Haskell converte os carateres \ e n em \n e vise-versa em vários casos.
 
@@ -447,10 +447,38 @@ Não é primo: 20
 ^CInterrupted.
 ```
 
-## Funções de teste
-Implementamos as funções `runTest` e `runTestSuite` 
+## Detetar mutações
+Implementamos as funções `runTest` e `runTestSuite` para correr os testes. Para a instrumentação dos programa fizemos
+2 tipos de interpretadores, um que devolvia as instruções executadas e outro que imprimia no ecra as instruções por
+onde passava. Para construir as tabelas do SBFL usamos principalmente o runDebugP, que é um interpretador que imprime que intruções executou num programa.
+
+
+Temos os seguintes 3 programas mutados e corremos o algorítmo de Spectrum-based Fault Localization.
+1. Um programa que calcula o maior de 3 coisas (int ou string ou bool)
+![ficheiro](images/max3.png)
+
+Podemos ver que o problema está na segunda linha e com baste probabilidade de estar na primeira. Ao analisar reparamos
+que no if then else o bloco de código do then e do else estão trocados.
+
+---
+
+2. Um programa que calcula o fatorial de um número
+![ficheiro](images/fatorial.png)
+
+Podemos ver que o problema está no ciclo while, se formos analisar melhor podemos ver que deveria estar `n+1` em vez de `n+2`.
+
+---
+
+3. Um programa que calcula a soma dos primeiros n números primos
+![ficheiro](images/primos.png)
+Podemos ver que o problema está no início do código. No return não deveria estar 1, deveria estar 0 porque a soma dos
+0 primeiros números primos é 0.
+
+
 
 -------------------------------------------------------------------------------
 
 ## Conclusão
-Este relatório apresentou uma visão geral da linguagem de programação proposta e sua implementação de interpretação. A linguagem oferece recursos como estruturas de controle, manipulação de variáveis e operações polimórficas, enquanto o interpretador permite a execução de programas escritos nesta linguagem. Com essa base sólida, é possível explorar e expandir ainda mais as capacidades da linguagem e do interpretador.
+
+Este relatório apresentou uma visão geral da linguagem de programação proposta e sua implementação de interpretação. A linguagem oferece recursos como estruturas de controle, manipulação de variáveis e operações polimórficas, enquanto o interpretador permite a execução de programas escritos nesta linguagem. Com essa base sólida, é possível explorar e expandir ainda mais as capacidades da linguagem e do interpretador. Fica por fazer melhores propriedades, melhorar o parser em termos de eficiencia, resolver ambiguidades e problemas a ler o carater '\' em strings. Também ficou poderá ser implementado uma intrução de defenição funções. 
+

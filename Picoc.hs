@@ -85,9 +85,9 @@ programa4 = parser nprimos_final
 
 teste1 = runTestSuite programa1 input1  -- programa da aula
 input1 = [
-    ([("a",R 4),          ("b", R 3)     , ("c", R 0)] ,R 4),
-    ([("a",R (-100)),     ("b", R (-200)), ("c", R (-101))] ,R (-100)),
-    ([("a",L "bacalhau"), ("b", L "atum"), ("c", L "arroz de frango")] ,L "bacalhau") ]
+    ([("a",R 4),          ("b", R 3)     , ("c", R 0)] ,R 4),                           -- T1
+    ([("a",R (-100)),     ("b", R (-200)), ("c", R (-101))] ,R (-100)),                 -- T2
+    ([("a",L "bacalhau"), ("b", L "atum"), ("c", L "arroz de frango")] ,L "bacalhau") ] -- T3
 
 -- função fatorial
 teste2 = runTestSuite programa2 input2
@@ -95,6 +95,7 @@ input2  = [([("n",R 0)],  R 1),             -- T1
            ([("n",R 1)],  R 1),             -- T2
            ([("n",R 15)], R 1307674368000)] -- T3
 
+-- Este exemplo não está a ser usado
 -- a soma de dois numeros é par ou impar
 teste3 = runTestSuite programa3 input3
 input3 = [ ([("dado2", R 123456890) ], L "par"),
@@ -109,8 +110,6 @@ input4  = [([("max",R 0)],  R 0),       -- T1
            ([("max",R 200)], R 111587)] -- T4
 
 
-
-
 -- tarefa 6
 
 --programa1M = applyMPico programa1
@@ -123,13 +122,3 @@ programa2Mut = parser programa2M_Final
 programa3Mut = parser programa3M_Final
 
 programa4Mut = parser nprimos_final2
-
-
-instrumentation :: PicoC -> PicoC
-instrumentation = undefined 
--- Não vou defenir esta função, porque já existe um interpretador debug
--- que imprime no ecra a instrução que está a executar
-
-instrumentedTestSuite :: PicoC ->  [(Context, Out String Bool Int)] -> Bool
-instrumentedTestSuite = undefined 
-

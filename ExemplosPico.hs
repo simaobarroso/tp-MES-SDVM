@@ -14,7 +14,7 @@ import Library.Probability
 -- este está mutado
 nprimos_final2 = "if (max == 0) then { return = 1;} else {int i = 3; int min = 1; int soma = 2; while (min < max){ int aux = 2; while ((~(aux>i)) * ~(i%aux==0)){aux=aux+1;} if(aux==i) then{ soma = soma + i; min = min + 1; }i = i+1;} int return = soma;}"
 
-nprimos_final = "int i = 3; int min = 1; int soma = 2; while (min < max){ int aux = 2; while ((~(aux>i)) * ~(i%aux==0)){aux=aux+1;} if(aux==i) then{ soma = soma + i; min = min + 1; }i = i+1;} int return = soma;"
+nprimos_final = "if ( max == 0) then { return = 0;} else {int i = 3; int min = 1; int soma = 2; while (min < max){ int aux = 2; while ((~(aux>i)) * ~(i%aux==0)){aux=aux+1;} if(aux==i) then{ soma = soma + i; min = min + 1; }i = i+1;} int return = soma;}"
 
 nprimos = "print( \"primo: \"); print(2);  print(\"\n\"); int i = 3; int min = 1; int soma = 1; while (min < max){ int aux = 2; while ((~(aux>i)) * ~(i%aux==0)){aux=aux+1;} if(aux==i) then{ print( \"primo: \"); print(i); print(\"\n\"); soma = soma + i; min = min + 1; }i = i+1;} int return = soma;"
  
