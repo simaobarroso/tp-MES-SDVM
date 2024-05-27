@@ -6,6 +6,7 @@ module Types where
 import Library.Probability
 
 import Data.Data
+import Data.List
 
 
 deriving instance Data (Dist Int)
@@ -80,11 +81,11 @@ instance Show Inst where
     show ( Atrib e t v)     = t ++ " " ++ e ++ " = " ++ show v ++ ";\n"
     show ( Idle )           = "" 
     show ( Comment a )      = "//"  ++ a ++ "//\n" 
-    show ( Print e   )      = "print("++show e++")\n"
-    show ( Wait  e   )      = "wait("++show e++")\n"
+    show ( Print e   )      = "print("++show e++");\n"
+    show ( Wait  e   )      = "wait("++show e++");\n"
 
 instance Show Exp where
-    show (Char   a )    = show a 
+    show (Char   a )    = show a --replaceSubstring "\\\\" "\\" $ show a 
     show (Fetch  a )    = a 
     show (Empty    )    = ""
     show (Const  a )    = show a

@@ -3,6 +3,7 @@ module Parser where
 
 -- import Prelude hiding ((<*>), (<$>))
 import Data.Char
+import Data.List
 
 import Types
 import Library.Probability
@@ -112,14 +113,20 @@ pInt2 :: Parser Int
 pInt2 = f <$$> pSinal2 <**> pDigitos
     where f x y = read $ x:y
 
+
+replaceSubstring :: String -> String -> String -> String
+replaceSubstring _ _ [] = []
+replaceSubstring old new str@(x:xs)
+    | isPrefixOf old str = new ++ replaceSubstring old new (drop (length old) str)
+    | otherwise = x : replaceSubstring old new xs
+
 pString =  f <$$> symbol '\"' 
              <**> zeroOrMore (satisfy (/='\"')) 
              <**> symbol '\"'
-       <|> g <$$> symbol '\'' 
-             <**> zeroOrMore (satisfy (/='\"')) 
-             <**> symbol '\''
-    where f a b c = b 
-          g a b c = b 
+-- (!!1) $ fst $ head $ pString "\"x\n\\2\tg\""
+
+    where f a b c = replaceSubstring "\\\\" "\\" b  
+         -- g a b c = b 
 
 pDigitos =  f <$$> satisfy isDigit
         <|> g <$$> satisfy isDigit <**> pDigitos
@@ -228,12 +235,12 @@ comment =  f <$$> token "//" <**> zeroOrMore (satisfy isPrint) <**> token' "//"
     where f _ t _ = Comment t
 
 myprint = f <$$> token' "print" 
-            <**> enclosedBy (symbol' '(') exp2  (symbol'' ')') 
-    where f _ e  = Print e
+            <**> enclosedBy (symbol' '(') exp2  (symbol'' ')') <**> symbol' ';'
+    where f _ e _ = Print e
 
 wait =   f <$$> token' "wait" 
-            <**> enclosedBy (symbol' '(') pInt2 (symbol'' ')') 
-    where f _ e  = Wait e
+            <**> enclosedBy (symbol' '(') pInt2 (symbol'' ')') <**> symbol' ';'
+    where f _ e _  = Wait e
 
 -- ordem imperativa
 ordem  =  atrib 

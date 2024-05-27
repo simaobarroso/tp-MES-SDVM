@@ -19,7 +19,7 @@ a gente sabe
 <Linhas>       ::= <Linhas> <Ordem>
                  | <Ordem> 
 
-<Ordem>        ::= <Atribuicao> | <While> | <If> | <Comentario> | <Print>
+<Ordem>        ::= <Atribuicao> | <While> | <If> | <Comentario> | <Print> | <Wait>
 
 <If>           ::= "if" "(" <Expressao> ")" "then" "{" <Linhas> "}" <Else> 
 
@@ -36,18 +36,22 @@ a gente sabe
 
 <Tipo>         ::= "char" | "int" | "bool"
 
-<Print>        ::= "print" "(" <Expressao> ")"
+<Print>        ::= "print" "(" <Expressao> ")" ";"
 
+<Wait>         ::= "wait"  "(" <Expressao> ")" ";"
 
 <Expressao>    ::= <Exp1> ">"  <Expressao>
                  | <Exp1> "<"  <Expressao>
                  | <Exp1> "==" <Expressao>
                  | <Exp1>
                
-<Exp1>         ::= <Exp2>  ("+" | "-") <Expressao>
+<Exp1>         ::= <Exp2> "+" <Expressao>
+                 | <Exp2> "-" <Expressao>
                  | <Exp2>
 
-<Exp2>         ::= <Fator> ("%" | "*" | "/") <Expressao>
+<Exp2>         ::= <Fator> "%" <Expressao>
+                 | <Fator> "*" <Expressao>
+                 | <Fator> "/" <Expressao>
                  | <Fator>
 
 <Fator>        ::= <Valor>
@@ -73,7 +77,7 @@ a gente sabe
 -------------------------------------------------------------------------------
 
 ### Características da Linguagem
-
+Algumas características genéricas da linguagem.
 - **Construtor If-Else Opcional**: A estrutura `IfElse` não exige um ramo `else`, tornando-o opcional para maior flexibilidade na codificação.
 
 - **Distribuições de Valores**: Introduz o conceito de distribuições de inteiros (`Dist Int`), permitindo a avaliação de elementos com base em valores aleatórios que seguem uma distribuição específica.
@@ -83,9 +87,11 @@ a gente sabe
 - **Output Polimórfico**: Define um tipo `Out` que representa um valor da linguagem, permitindo valores de tipo `String`, `Integer` e `Bool`. Isso possibilita uma saída flexível e adaptável às necessidades do programa.
 
 - **Intrução Print**: Introduz a capacidade de imprimir coisas no ecra.
+
 - **Polimorfismo**: Implementa funções polimórficas básicas, como adição e multiplicação, para lidar com diferentes tipos de entrada de forma coerente.
 
 ## Estrutura do projeto
+Árvore da organização semantica dos ficheiros de código
 ![ficheiro](images/estrutura.png)
 
 ### Tipos de Dados
@@ -139,10 +145,9 @@ Tentamos usar com cuidado estes combinadores para evitar consumir espaços no me
 ### Exp Expressões 
 Tipicamente a negação lógica tem baixa prioridade mas como esta negação é polimórfica também é numérica por isso atribuímos muita prioridade.
 
-FIXME FALAR DE CENAS
 Nível de prioridade mais baixo:
 * Igualdade - "=="
-* Or - "||"
+* Conjunção - "||"
 * Maior - ">"
 * Menor - "<"
 
@@ -175,17 +180,17 @@ Na semantica implementada, quando uma variável pertence a uma distribuição es
 
 ## Implementação do Gerador
 
-Os geradores foram implementados utilizando o monad de estado para manter o nome das variáveis disponíveis durante a geração de expressões. A ideia é se utilizar variáveis só utilizar as que já tenham sido atribuidas.
+Os geradores foram implementados utilizando o monad de estado para manter o nome das variáveis disponíveis durante a geração de expressões. A ideia é se utilizar variáveis só utilizar as que já tenham sido atribuidas. 
 
 O gerador de expressões inteiros `gei` e de caracteres `ges` constroem recursivamente expressões compostas de constantes e operadores aritméticos, não inclui de boleanos porque se numa expressão númerica colcar um < menor, a expressão já não é do domínio dos inteiros mas dos boleanos. O gerador de expressões booleanas `geb` segue uma abordagem similar, mas inclui operadores booleanos. Na geração de expressoes inteira é possível também gerar distribuições neste momento está limitada a gerar distribuições normais ou uniformes
 
-O gerador de atribuição `genAtrib` atualiza o estado de variáveis disponíveis com nomes gerados aleatoriamente e tipos definidos de forma arbitrária. Também gera uma expressão do tipo que sorteou. 
+O gerador de atribuição `genAtrib` atualiza o estado de variáveis disponíveis com nomes bem gerados e com tipos definidos de forma arbitrária. Também gera uma expressão do tipo que sorteou. 
 
-Também foi implementada uma função shrink para o PicoC.
+Também foi implementada uma função shrink para o PicoC completo.
 
 ## Implementação do Interpretador
 
-Uma função de interpretação, `runP :: Programa -> Context -> IO Context`, foi desenvolvida para executar programas escritos na linguagem. Esta função executa as instruções do programa e mantém um contexto atualizado das variáveis criadas durante a execução.
+Temos uma função de interpretação, `runP :: Programa -> Context -> IO Context`, foi desenvolvida para executar programas escritos na linguagem. Esta função executa as instruções do programa e mantém um contexto atualizado das variáveis criadas durante a execução.
 
 Foram feitos 2 interpretadores para auxiliar a instrumentação de programas
 * runDebug :: [Inst] -> Context -> IO Context, Este interpretador, imprime para o ecra o tipo de instrução que está a
@@ -262,7 +267,7 @@ Essas mutações podem ajudar a explorar diferentes comportamentos do programa e
 
 
 ### Otimizações e Code Smeels
-Quando temos comentários ou casos de while (False) ou um if (False) retornamos um tipo Idle que representa uma ação nula. Que serão removidos todos os idle da nossa árvore.
+Quando temos comentários ou casos de while (False) ou um if (False) que representam uma ação nula é removidos da nossa árvore.
 
     Simplificamos a comparação de igualdade de boleanos 
     * exp == True   -> exp
@@ -306,7 +311,6 @@ mesmo.
 (Pico p) ~ (Pico q) = liftM2 (==) (run p []) (run q [])
 ```
 
-
 A **propriedade 1** compara as árvores, testa se quando fazemos unparse e parse obtemos uma equivalente árvore sintaxe abstrata.
 ```
 propriedade1 pico = pico == pu pico
@@ -314,54 +318,56 @@ propriedade1 pico = pico == pu pico
 
 
 A **propriedade 2** compara a semântica da linguagem. Testa se quando fazemos unparse e parse de uma linguagem mesmo que diferentes, obtemos uma memória equivalente.
+
+Esta propriedades não garante equivalencia a 100% porque dois picoC podem ter efeitos secundários diferentes mas ter a
+mesma memória. Não é possível comparar efeitos secundários, mas garante que no fim as variáveis tenham o mesmo valor.
+
 ```
 propriedade2 pico = pico ~ pu pico
 ```
 
 Também temos uma terceira propriedade que combina as útimas 2, que testa se 2 PicoC são iguais semanticamente e se a arvore sintaxe abstrata são iguais.
 
+### Casos onde as propriedades falham
+As propriedades nem sempre funcionam, quando temos \n ou \t ou um carater de proteção como o \ dentro de uma string.
+Por exemplo um \n, quando fazemos unparsing e parsing torna-se num \\n. Descobrir como resolver este problema é
+complicado até porque o próprio Haskell converte os carateres \ e n em \n e vise-versa em vários casos.
 
-As nossas propriedades funcionam sempre exceto quando usamos o monad das distribuições.
-A razão de isso acontecer é que quando se compara o resultado de programas com valores aleatórios quase sempre dão diferentes e por isso não passa na propriedade.
+Também não funcionam quando usamos o monad das distribuições.
+Não passa na prorpiedade semantica, a razão de isso acontecer é que quando se compara o resultado de programas com valores aleatórios quase sempre dão diferentes e por isso não passa na propriedade.
 
 Também não passa na propriedade que compara as árvores abstratas depois do uparsing e parsing. O problema está na
 instancia Show das distribuições. Para cumprir a propriedade teríamos que alterar o Show das distribuições para que
 fosse possível o parsing pelo nosso parser de PicoC.
 
-Testes das propriedades com alguns exemplos:
-FIXME falta colocar
-
-## Funções de teste
-FIXME
-
+## Declarações Return 
+As declarações de return são úteis para os testes, onde queremos ver comparar o output esperado com o obtido e
+precisamos de retornar alguma coisa. Não implementamos um return diretamente, mas estipulamos que quando queremos
+retornar, declaramos uma variável return com o valor que queremos retornar. Por exemplo no fim do programa dizemos
+"int return = soma;" quando queremos retonar o valor de soma.
 
 ## Exemplo de Execução
 
-Para correr o programa chamarmos a função run com a árvore dados e uma memória vazia
-run dados [] e obtemos a memória final depois da execução.
+Para correr o programa chamarmos a função runP que assume uma memória vazia
 
 ```
-dados :: Programa
-dados = [
-    Atrib "x" "int" $ D2 (uniform [1..10]),
-    Atrib "y" "int" $ D2 (uniform [1..10]),
-    Atrib "z" "int" $ Mult (Fetch "x") (Fetch "y")
-    ]
+dados = "
+    int y = D (uniform, 1,6); 
+    int x = D (uniform, [1,2,3,4,5,6]); 
+    int z = x * y;"
+```
+O programa dados é um programa que resulta em multiplicar 2 valores da distribuição uniform com os valores entre 1 e 6. O resultado de correr o program algumas vezes é:
 
 ```
-O programa dados é um programa que resulta em multiplicar 2 valores da distribuição normal com os valores entre 1 a
-10. O resultado de correr o program algumas vezes é:
-
-```
-ghci> run dados []
-[("z",R 10),("y",R 5),("x",R 2)]
-ghci> run dados []
-[("z",R 80),("y",R 8),("x",R 10)]
-ghci> run dados []
-[("z",R 18),("y",R 9),("x",R 2)]
-ghci> run dados []
-[("z",R 80),("y",R 10),("x",R 8)]
-ghci> run dados []
+ghci> programa = parser dados
+ghci> runP programa
+[("z",R 2),("x",R 1),("y",R 2)]
+ghci> runP programa
+[("z",R 12),("x",R 2),("y",R 6)]
+ghci> runP programa
+[[A[("z",R 12),("x",R 3),( "y",R 4)]
+ghci> runP programa
+[[A[("z",R 15),("x",R 3),("y",R 5)]
 ```
 
 Outro exemplo, considere o seguinte programa que calcula o fatorial de 15:
@@ -389,7 +395,60 @@ IO [("i",R 16),("fact",R 1307674368000),("n",R 15)]
 
 Onde o valor de `fact` é o resultado do cálculo do fatorial de 15.
 
+Um outro programa feito em PicoC é o cáculo de número primos:
+```
+primos = "
+print( \"primo: \"); 
+print(2); 
+print(\"\n\"); 
+int i = 3; 
+while (True){ 
+    int aux = 2; 
+    while ((~(aux>i)) * ~(i%aux==0)){
+        aux=aux+1;
+    }
+    if(aux==i) then{ 
+        print( \"primo: \"); 
+        print(i); 
+        print(\"\n\"); 
+        wait (1); 
+    } else { 
+        print(\"Não é primo: \"); 
+        print(i); 
+        print(\"\n\"); 
+    } 
+    i = i+1; 
+}"
+```
 
+Dá 
+
+```
+ghci> runP $ parser primos
+primo: 2
+primo: 3
+Não é primo: 4
+primo: 5
+Não é primo: 6
+primo: 7
+Não é primo: 8
+Não é primo: 9
+Não é primo: 10
+primo: 11
+Não é primo: 12
+primo: 13
+Não é primo: 14
+Não é primo: 15
+Não é primo: 16
+primo: 17
+Não é primo: 18
+primo: 19
+Não é primo: 20
+^CInterrupted.
+```
+
+## Funções de teste
+Implementamos as funções `runTest` e `runTestSuite` 
 
 -------------------------------------------------------------------------------
 

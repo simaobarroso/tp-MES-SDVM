@@ -11,19 +11,32 @@ import Library.Probability
 
 --programaPrimos = "print(2) print(3) int i = 5; int aux; while (True) {aux = 0;while (aux < i /2) { if ( i  % 2 == 0) then {i = i+1; }else {aux = aux +1; } if (aux == i/2 -1) then { print ( i) }  } }"
 
-primos = "print( \"primo: \") print(2) print(\"\n\") int i = 3; while (True){ int aux = 2; while ((~(aux>i)) * ~(i%aux==0)){aux=aux+1;}if(aux==i) then{ wait (1) print( \"primo: \") print(i) print(\"\n\") } else { print(\"Não é primo: \") print(i) print(\"\n\") } i = i+1; }"
+-- este está mutado
+nprimos_final2 = "if (max == 0) then { return = 1;} else {int i = 3; int min = 1; int soma = 2; while (min < max){ int aux = 2; while ((~(aux>i)) * ~(i%aux==0)){aux=aux+1;} if(aux==i) then{ soma = soma + i; min = min + 1; }i = i+1;} int return = soma;}"
+
+nprimos_final = "int i = 3; int min = 1; int soma = 2; while (min < max){ int aux = 2; while ((~(aux>i)) * ~(i%aux==0)){aux=aux+1;} if(aux==i) then{ soma = soma + i; min = min + 1; }i = i+1;} int return = soma;"
+
+nprimos = "print( \"primo: \"); print(2);  print(\"\n\"); int i = 3; int min = 1; int soma = 1; while (min < max){ int aux = 2; while ((~(aux>i)) * ~(i%aux==0)){aux=aux+1;} if(aux==i) then{ print( \"primo: \"); print(i); print(\"\n\"); soma = soma + i; min = min + 1; }i = i+1;} int return = soma;"
+ 
+nprimos2 = "print(\"\n\");"
+
+dezprimos = "print( \"primo: \"); print(2);  print(\"\n\"); int i = 3; int max = 10; int min = 1; int soma = 1; while (min < max){ int aux = 2; while ((~(aux>i)) * ~(i%aux==0)){aux=aux+1;} if(aux==i) then{ print( \"primo: \"); print(i); print(\"\n\"); soma = soma + i; min = min + 1; }i = i+1;}"
+
+primos = "print( \"primo: \"); print(2); print(\"\n\"); int i = 3; while (True){ int aux = 2; while ((~(aux>i)) * ~(i%aux==0)){aux=aux+1;}if(aux==i) then{ print( \"primo: \"); print(i); print(\"\n\");wait (1);  } else { print(\"Não é primo: \"); print(i); print(\"\n\"); } i = i+1; }"
 
 programa3M_Final = "int dado1 = D (normal,[2,3,9,10]); if (((dado2 + dado1) % 2) == 0 ) then { return = \"par\";} else {return = \"impar\";}"
 
 -- a soma de dois números par é par
 programa8 = "int dado1 = D (normal,[2,4,6,8]); if (((dado2 + dado1)%2) == 0 ) then { return = \"par\";} else {return = \"impar\";}"  
 
-programa2M_Final ="if(n==0) then{ int fact = 1; } else{ int i = 1; int fact = 1; while (i<n+2){ fact = (fact)*(i); i = i+1; }}return = fact;"
+programa2M_Final ="int i = 1; int fact = 1; if(n==0) then{ int fact = 1; } else { while (i<n+2){ fact = (fact)*(i); i = i+1; }}return = fact;"
 
-programa1M_Final = "if(a>b) then{ if(b>c) then{ m = b; } else{ m = c; } } else{ if(a>c) then{ m = a; } else{ m = c; } }print(\"O maior número é\") print(m) return = m;"
+programa1M_Final = "if(a>b) then{ if(b>c) then{ m = b; } else{ m = c; } } else{ if(a>c) then{ m = a; } else{ m = c; } }print(\"O maior número é\"); print(m); return = m;"
 
 --r = run b []
  --   where (Pico b) =  getPico fact
+
+dados2 = " int y = D (uniform, 1,6); int x = D (uniform, [1,2,3,4,5,6]); int z = x * y;"
 
 dados :: PicoC
 dados = Pico [
@@ -38,7 +51,7 @@ fact = "int n = 15; if ( n == 0 ) then { int fact = 1; } else { int i = 1; int f
 
 fact_test = "if ( n == 0 ) then { int fact = 1; } else { int i = 1; int fact = 1; while ( i < n + 1 ) { fact = fact * i; i = i + 1; } } return = fact;"
 
-fact_prettyprint = "int n = 15; if ( n == 0 ) then { int fact = 1; } else { int i = 1; int fact = 1; while ( i < n + 1 ) { fact = fact * i; print(\"i = \") print(i) print(\" fact = \") print(fact) print (\"\n\") i = i + 1; } } return = fact;"
+fact_prettyprint = "int n = 15; if ( n == 0 ) then { int fact = 1; } else { int i = 1; int fact = 1; while ( i < n + 1 ) { fact = fact * i; print(\"i = \"); print(i); print(\" fact = \"); print(fact); print (\"\n\"); i = i + 1; } } return = fact;"
 
 l4 = "int margem = 15 ; if ( margem > 30 ) then { margem = 4 * 2 + 3 ; } else { margem = margem + 4 ; }"
 

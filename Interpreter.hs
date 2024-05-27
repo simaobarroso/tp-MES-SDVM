@@ -55,7 +55,7 @@ eval (Neg     a  ) c = trimap  id   not  negate <$> eval a c
 eval (RDiv    a b) c = trimap2 id2  id2  mod    <$> eval a c <*> eval b c
 eval (Div     a b) c = trimap2 id2  id2  div    <$> eval a c <*> eval b c
 eval (Add     a b) c = trimap2 (++) (||) (+)    <$> eval a c <*> eval b c
-eval (Sub     a b) c = trimap2 (\\) id2 (-)    <$> eval a c <*> eval b c
+eval (Sub     a b) c = trimap2 (\\) id2  (-)    <$> eval a c <*> eval b c
 eval (Mult    a b) c = trimap2 id2  (&&) (*)    <$> eval a c <*> eval b c
 eval (Or      a b) c = trimap2 id2  (||) max    <$> eval a c <*> eval b c
 eval (Smaller a b) c = comp2   (<)  (<)  (<)    <$> eval a c <*> eval b c
@@ -117,6 +117,7 @@ run (atrib:t) c    = do
 run [] c = return c
 
 runP (Pico p) = run p []
+
 -------------------------------------------------------------------------------
 -- Tarefa 7. Imprime a intrução que correr
 -------------------------------------------------------------------------------
@@ -155,7 +156,7 @@ runDebug (atrib:t) c    = do
 
 runDebug [] c = return c
 
-runDebugP (Pico p) = runDebug p []
+runDebugP (Pico p) = runDebug p
 
 -------------------------------------------------------------------------------
 -- Tarefa 9. Devolve a lista de intruções de executou
@@ -192,5 +193,5 @@ runL (atrib:t) c l = do
 
 runL [] c l = return l
 
-runPL (Pico p) = runL p [] []
+runLP (Pico p) c = nub <$> runL p c []
 
